@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if lead %}Edit Lead{% else %}New Lead{% endif %} - PromoHub
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>
+                    {% if lead %}
+                        <i class="fas fa-user-edit me-2"></i>Edit Lead
+                    {% else %}
+                        <i class="fas fa-user-plus me-2"></i>Add New Lead
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% if lead %}/leads/{{ lead.id }}/edit{% else %}/leads/new{% endif %}">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Name *</label>
+                            <input type="text" class="form-control" name="name" 
+                                   value="{{ lead.name if lead else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" name="email" 
+                                   value="{{ lead.email if lead else '' }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="company" class="form-label">Company</label>
+                            <input type="text" class="form-control" name="company" 
+                                   value="{{ lead.company if lead else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" name="phone" 
+                                   value="{{ lead.phone if lead else '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="source" class="form-label">Source</label>
+                            <select class="form-select" name="source">
+                                <option value="manual" {{ 'selected' if not lead or lead.source == 'manual' }}>Manual</option>
+                                <option value="website" {{ 'selected' if lead and lead.source == 'website' }}>Website</option>
+                                <option value="social" {{ 'selected' if lead and lead.source == 'social' }}>Social Media</option>
+                                <option value="referral" {{ 'selected' if lead and lead.source == 'referral' }}>Referral</option>
+                                <option value="demo_chat" {{ 'selected' if lead and lead.source == 'demo_chat' }}>Demo Chat</option>
+                                <option value="api" {{ 'selected' if lead and lead.source == 'api' }}>API</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="platform" class="form-label">Platform Interest</label>
+                            <select class="form-select" name="platform">
+                                <option value="">Select Platform</option>
+                                <option value="promohub" {{ 'selected' if lead and lead.platform == 'promohub' }}>PromoHub</option>
+                                <option value="ezclub" {{ 'selected' if lead and lead.platform == 'ezclub' }}>EZClub</option>
+                                <option value="ezdirectory" {{ 'selected' if lead and lead.platform == 'ezdirectory' }}>EZDirectory</option>
+                            </select>
+                        </div>
+                        {% if lead %}
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="new" {{ 'selected' if lead.status == 'new' }}>New</option>
+                                <option value="contacted" {{ 'selected' if lead.status == 'contacted' }}>Contacted</option>
+                                <option value="replied" {{ 'selected' if lead.status == 'replied' }}>Replied</option>
+                                <option value="converted" {{ 'selected' if lead.status == 'converted' }}>Converted</option>
+                                <option value="unsubscribed" {{ 'selected' if lead.status == 'unsubscribed' }}>Unsubscribed</option>
+                            </select>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="url" class="form-label">Website/Profile URL</label>
+                        <input type="url" class="form-control" name="url" 
+                               value="{{ lead.url if lead else '' }}" placeholder="https://...">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" name="notes" rows="3">{{ lead.notes if lead else '' }}</textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% if lead %}/leads/{{ lead.id }}{% else %}/leads{% endif %}" 
+                           class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>
+                            {% if lead %}Update Lead{% else %}Create Lead{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

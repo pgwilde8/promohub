@@ -1,0 +1,89 @@
+/* Main Styles */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Dashboard Cards */
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Status Badges */
+.badge {
+    font-size: 0.75em;
+}
+
+/* Tables */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.025);
+}
+
+/* Buttons */
+.btn-group-sm > .btn, .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Form styling */
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 0.25rem;
+    }
+}
+
+/* Chat widget specific */
+#chat-widget {
+    z-index: 1050;
+}
+
+#chat-panel {
+    margin-bottom: 80px;
+    margin-right: 10px;
+}
+
+/* Animation for stats cards */
+.card-body h2 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+/* Custom utility classes */
+.opacity-75 {
+    opacity: 0.75;
+}
+
+.text-decoration-none:hover {
+    text-decoration: underline !important;
+}

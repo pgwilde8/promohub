@@ -1,0 +1,52 @@
+/* Blog-specific styles */
+.navbar-brand {
+    font-weight: bold;
+}
+
+article.card {
+    border: none;
+    transition: transform 0.2s ease-in-out;
+}
+
+article.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-title a {
+    color: #333;
+}
+
+.card-title a:hover {
+    color: #007bff;
+}
+
+/* Chat widget positioning */
+#chat-widget {
+    z-index: 1050;
+}
+
+#chat-panel {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+}
+
+#chat-messages {
+    max-height: 250px;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    #chat-panel {
+        width: 300px !important;
+        height: 350px !important;
+    }
+    
+    .display-4 {
+        font-size: 2rem;
+    }
+}

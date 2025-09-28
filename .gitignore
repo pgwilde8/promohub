@@ -1,0 +1,161 @@
+# Environment Variables
+.env
+.env.local
+.env.production
+.env.staging
+env_template.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# Database Files
+*.db
+*.sqlite3
+*.sqlite
+database/
+*.sql
+
+# Log Files
+logs/
+*.log
+log/
+*.log.*
+
+# Uploaded Files & Media
+uploads/
+media/
+static/uploads/
+user_uploads/
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Alembic (keep structure but ignore temp files)
+alembic/versions/*.pyc
+alembic/__pycache__/
+
+# FastAPI/Uvicorn
+.coverage
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath
+*.sage.py
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# API Keys & Secrets (extra protection)
+*secret*
+*key*
+*token*
+*.pem
+*.key
+*.crt
+
+# OS generated files
+.DS_Store?
+ehthumbs.db
+Icon?
+
+# Email testing files
+sent_emails/
+email_debug/
+
+# Local development
+local_settings.py
+development.ini
+
+# Docker (if you add it later)
+.dockerignore
+docker-compose.override.yml
+
+# Node modules (if you add frontend later)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Analytics and metrics
+analytics/
+metrics/
+stats/

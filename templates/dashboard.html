@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - PromoHub{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h1>
+    <div class="btn-group">
+        <a href="/leads/new" class="btn btn-primary">
+            <i class="fas fa-user-plus me-1"></i>Add Lead
+        </a>
+        <button type="button" class="btn btn-outline-primary" onclick="refreshStats()">
+            <i class="fas fa-sync-alt me-1"></i>Refresh
+        </button>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Total Leads</h5>
+                        <h2>{{ stats.total_leads or 0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">New Leads</h5>
+                        <h2>{{ stats.new_leads or 0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-plus fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Emails Sent</h5>
+                        <h2>{{ stats.total_outreach or 0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-envelope fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Published Posts</h5>
+                        <h2>{{ stats.published_content or 0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-blog fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Statistics -->
+{% if stats.email_stats %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Email Performance</h5>
+            </div>
+            <div class="card-body">
+                {% for status, count in stats.email_stats.items() %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-capitalize">{{ status }}</span>
+                    <span class="badge bg-primary">{{ count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-robot me-2"></i>Bot Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Outreach Bot</span>
+                    <span class="badge bg-success">Active</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Content Bot</span>
+                    <span class="badge bg-success">Active</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Social Bot</span>
+                    <span class="badge bg-warning">Scheduled</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Retarget Bot</span>
+                    <span class="badge bg-success">Active</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-clock me-2"></i>Recent Leads</h5>
+            </div>
+            <div class="card-body">
+                {% if stats.recent_leads %}
+                    <div class="list-group list-group-flush">
+                        {% for lead in stats.recent_leads %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ lead.name }}</strong><br>
+                                <small class="text-muted">{{ lead.email }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ 'success' if lead.status == 'new' else 'info' }}">
+                                    {{ lead.status }}
+                                </span><br>
+                                <small class="text-muted">{{ lead.created_at.strftime('%m/%d %H:%M') }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3">
+                        <a href="/leads" class="btn btn-sm btn-outline-primary">View All Leads</a>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No recent leads</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-envelope-open-text me-2"></i>Recent Outreach</h5>
+            </div>
+            <div class="card-body">
+                {% if stats.recent_outreach %}
+                    <div class="list-group list-group-flush">
+                        {% for outreach in stats.recent_outreach %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ outreach.subject[:50] }}...</strong>
+                                <span class="badge bg-{{ 'success' if outreach.status == 'sent' else 'warning' }}">
+                                    {{ outreach.status }}
+                                </span>
+                            </div>
+                            <small class="text-muted">
+                                To: {{ outreach.lead.email }} • {{ outreach.sent_at.strftime('%m/%d %H:%M') }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No recent outreach</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function refreshStats() {
+    location.reload();
+}
+</script>
+{% endblock %}
