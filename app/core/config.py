@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     
     # YouTube Data API Configuration
     youtube_api_key: Optional[str] = None
+    youtube_api_key_2: Optional[str] = None
+    youtube_api_key_3: Optional[str] = None
+    youtube_api_key_2: Optional[str] = None
+    youtube_api_key_3: Optional[str] = None
+    youtube_api_key_4: Optional[str] = None
     
     # SMTP Configuration
     smtp_server: str
@@ -86,6 +91,16 @@ class Settings(BaseSettings):
     upload_folder: str = "./uploads"
     log_folder: str = "./logs"
     
+    @property
+    def youtube_api_keys(self) -> List[str]:
+        """Get all available YouTube API keys"""
+        keys = []
+        for key_attr in ['youtube_api_key', 'youtube_api_key_2', 'youtube_api_key_3', 'youtube_api_key_4']:
+            key = getattr(self, key_attr, None)
+            if key:
+                keys.append(key)
+        return keys
+
     @property
     def primary_products_list(self) -> List[str]:
         """Get primary products as a list"""

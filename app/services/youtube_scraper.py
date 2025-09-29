@@ -24,6 +24,12 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.core.database import SessionLocal
 
+# Import Twitter scraper for enhanced creator discovery
+try:
+    from app.services.twitter_scraper import TwitterCreatorScraper
+except ImportError:
+    TwitterCreatorScraper = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,9 +49,23 @@ class YouTubeCreatorScraper:
     """Scraper for finding YouTube creator domains and adding them to enrichment pipeline"""
     
     def __init__(self, db_session: Session = None):
-        self.api_key = settings.youtube_api_key
+        # Collect all available API keys
+        self.api_keys = []
+        if settings.youtube_api_key:
+            self.api_keys.append(settings.youtube_api_key)
+        if settings.youtube_api_key_2:
+            self.api_keys.append(settings.youtube_api_key_2)
+        if settings.youtube_api_key_3:
+            self.api_keys.append(settings.youtube_api_key_3)
+        
+        self.current_key_index = 0
         self.db = db_session or SessionLocal()
         self.client = httpx.AsyncClient(timeout=30.0)
+        
+        if not self.api_keys:
+            logger.error("No YouTube API keys configured")
+        else:
+            logger.info(f"Initialized with {len(self.api_keys)} YouTube API keys")
         
         # Target niches from strategy document
         self.target_niches = {
@@ -64,6 +84,56 @@ class YouTubeCreatorScraper:
             'tier3': 100000   # Large creators
         }
     
+    def get_current_api_key(self) -> Optional[str]:
+        """Get current API key with rotation support"""
+        if not self.api_keys:
+            return None
+        return self.api_keys[self.current_key_index]
+    
+    def rotate_api_key(self) -> bool:
+        """Rotate to next API key if available"""
+        if len(self.api_keys) <= 1:
+            return False
+        
+        self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
+        logger.info(f"Rotated to API key {self.current_key_index + 1} of {len(self.api_keys)}")
+        return True
+    
+    async def make_api_request(self, url: str, params: Dict) -> Optional[Dict]:
+        """Make API request with automatic key rotation on quota exceeded"""
+        max_attempts = len(self.api_keys) if self.api_keys else 1
+        
+        for attempt in range(max_attempts):
+            current_key = self.get_current_api_key()
+            if not current_key:
+                logger.error("No API keys available")
+                return None
+            
+            params['key'] = current_key
+            
+            try:
+                response = await self.client.get(url, params=params)
+                
+                if response.status_code == 403:
+                    error_data = response.json()
+                    if 'quotaExceeded' in str(error_data):
+                        logger.warning(f"Quota exceeded for key {self.current_key_index + 1}, trying next key...")
+                        if not self.rotate_api_key():
+                            logger.error("All API keys exhausted")
+                            return None
+                        continue
+                
+                response.raise_for_status()
+                return response.json()
+                
+            except Exception as e:
+                logger.error(f"API request failed with key {self.current_key_index + 1}: {str(e)}")
+                if not self.rotate_api_key():
+                    logger.error("All API keys failed")
+                    return None
+        
+        return None
+    
     async def __aenter__(self):
         return self
     
@@ -71,6 +141,69 @@ class YouTubeCreatorScraper:
         await self.client.aclose()
         if not self.db.bind.pool.checkedout():
             self.db.close()
+    
+    def get_current_api_key(self) -> Optional[str]:
+        """Get the current API key for rotation"""
+        if not self.api_keys:
+            return None
+        return self.api_keys[self.current_key_index % len(self.api_keys)]
+    
+    def rotate_api_key(self):
+        """Rotate to the next API key"""
+        if len(self.api_keys) > 1:
+            self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
+            logger.info(f"Rotated to API key #{self.current_key_index + 1}/{len(self.api_keys)}")
+    
+    async def handle_quota_exceeded(self):
+        """Handle quota exceeded by rotating API key"""
+        self.rotate_api_key()
+        current_key = self.get_current_api_key()
+        if current_key:
+            logger.info(f"Quota exceeded, switched to API key #{self.current_key_index + 1}")
+            return True
+        else:
+            logger.error("All API keys exhausted")
+            return False
+    
+    async def make_api_request(self, url: str, params: Dict) -> Optional[Dict]:
+        """Make API request with automatic key rotation on quota exceeded"""
+        retry_count = 0
+        max_retries = len(self.api_keys)  # Try each API key once
+        
+        while retry_count < max_retries:
+            try:
+                current_key = self.get_current_api_key()
+                if not current_key:
+                    logger.error("No valid API key available")
+                    return None
+                
+                params['key'] = current_key
+                response = await self.client.get(url, params=params)
+                
+                if response.status_code == 403:
+                    # Check if it's a quota exceeded error
+                    error_data = response.json()
+                    if 'quota' in error_data.get('error', {}).get('message', '').lower():
+                        logger.warning(f"Quota exceeded for API key #{self.current_key_index + 1}")
+                        if await self.handle_quota_exceeded():
+                            retry_count += 1
+                            continue
+                        else:
+                            logger.error("All API keys quota exceeded")
+                            return None
+                
+                response.raise_for_status()
+                return response.json()
+                
+            except Exception as e:
+                logger.error(f"API request error with key #{self.current_key_index + 1}: {str(e)}")
+                if retry_count < max_retries - 1:
+                    self.rotate_api_key()
+                    retry_count += 1
+                else:
+                    return None
+        
+        return None
     
     def extract_domain_from_url(self, url: str) -> Optional[str]:
         """Extract clean domain from URL"""
@@ -147,9 +280,9 @@ class YouTubeCreatorScraper:
         return None
     
     async def search_creators_by_keywords(self, keywords: List[str], max_results: int = 50) -> List[Dict]:
-        """Search for YouTube creators using specific keywords"""
-        if not self.api_key:
-            logger.error("YouTube API key not configured")
+        """Search for YouTube creators using specific keywords with API key rotation"""
+        if not self.api_keys:
+            logger.error("No YouTube API keys configured")
             return []
         
         all_creators = []
@@ -158,18 +291,18 @@ class YouTubeCreatorScraper:
             try:
                 url = "https://www.googleapis.com/youtube/v3/search"
                 params = {
-                    'key': self.api_key,
                     'q': keyword,
                     'type': 'channel',
                     'part': 'snippet',
-                    'maxResults': max(1, min(max_results // len(keywords), 10)),  # Ensure at least 1 result per keyword
+                    'maxResults': max(1, min(max_results // len(keywords), 10)),
                     'order': 'relevance'
                 }
                 
-                response = await self.client.get(url, params=params)
-                response.raise_for_status()
+                data = await self.make_api_request(url, params)
+                if not data:
+                    logger.error(f"Failed to get data for keyword: {keyword}")
+                    continue
                 
-                data = response.json()
                 creators = data.get('items', [])
                 all_creators.extend(creators)
                 
@@ -185,23 +318,19 @@ class YouTubeCreatorScraper:
         return all_creators
     
     async def get_channel_details(self, channel_ids: List[str]) -> List[Dict]:
-        """Get detailed information for multiple channels"""
-        if not self.api_key or not channel_ids:
+        """Get detailed information for multiple channels with API key rotation"""
+        if not self.api_keys or not channel_ids:
             return []
         
         try:
             url = "https://www.googleapis.com/youtube/v3/channels"
             params = {
-                'key': self.api_key,
                 'id': ','.join(channel_ids[:50]),  # API limit
                 'part': 'snippet,statistics,brandingSettings',
             }
             
-            response = await self.client.get(url, params=params)
-            response.raise_for_status()
-            
-            data = response.json()
-            return data.get('items', [])
+            data = await self.make_api_request(url, params)
+            return data.get('items', []) if data else []
             
         except Exception as e:
             logger.error(f"Error fetching channel details: {str(e)}")
@@ -328,6 +457,50 @@ class YouTubeCreatorScraper:
         
         return added_count
     
+    async def enhance_with_twitter_data(self, creator_info: Dict) -> List[str]:
+        """Enhance creator data with Twitter/X profile information"""
+        additional_domains = []
+        
+        if not TwitterCreatorScraper:
+            logger.debug("Twitter scraper not available, skipping X enhancement")
+            return additional_domains
+        
+        try:
+            # Initialize Twitter scraper
+            twitter_scraper = TwitterCreatorScraper()
+            
+            # Search for creator on Twitter/X
+            creator_name = creator_info.get('channel_name', '')
+            twitter_data = twitter_scraper.search_creator_by_username(creator_name)
+            
+            if twitter_data and twitter_data.get('relevance_score', 0) > 0.3:
+                # Extract website URLs from Twitter profile
+                website_urls = twitter_data.get('website_urls', [])
+                
+                for url in website_urls:
+                    try:
+                        domain = urlparse(url).netloc
+                        if domain and domain not in additional_domains:
+                            additional_domains.append(domain)
+                            logger.info(f"Found additional domain from X profile: {domain}")
+                    except Exception as e:
+                        logger.debug(f"Error parsing URL {url}: {str(e)}")
+                
+                # Update creator info with Twitter data
+                creator_info.update({
+                    'twitter_username': twitter_data.get('twitter_username'),
+                    'twitter_followers': twitter_data.get('twitter_followers', 0),
+                    'twitter_bio': twitter_data.get('twitter_bio', ''),
+                    'twitter_relevance_score': twitter_data.get('relevance_score', 0)
+                })
+                
+                logger.info(f"Enhanced {creator_name} with X data: @{twitter_data.get('twitter_username')} ({twitter_data.get('twitter_followers', 0)} followers)")
+            
+        except Exception as e:
+            logger.error(f"Error enhancing creator with Twitter data: {str(e)}")
+        
+        return additional_domains
+    
     async def log_scraper_run(self, results: Dict):
         """Log scraper execution results"""
         try:
@@ -397,14 +570,21 @@ class YouTubeCreatorScraper:
                     # Extract website domains
                     domains = await self.extract_creator_websites(channel)
                     
+                    # Initialize creator info
+                    creator_info = {
+                        'channel_name': channel.get('snippet', {}).get('title', ''),
+                        'subscriber_count': subscriber_count,
+                        'niche': niche,
+                        'tier': 'tier3' if subscriber_count >= 100000 else 'tier2' if subscriber_count >= 10000 else 'tier1'
+                    }
+                    
+                    # Enhance with Twitter/X data if available
+                    twitter_domains = await self.enhance_with_twitter_data(creator_info)
+                    if twitter_domains:
+                        domains.extend(twitter_domains)
+                        domains = list(set(domains))  # Remove duplicates
+                    
                     if domains:
-                        creator_info = {
-                            'channel_name': channel.get('snippet', {}).get('title', ''),
-                            'subscriber_count': subscriber_count,
-                            'niche': niche,
-                            'tier': 'tier3' if subscriber_count >= 100000 else 'tier2' if subscriber_count >= 10000 else 'tier1'
-                        }
-                        
                         # Add domains to enrichment pipeline
                         added = await self.add_domains_to_enrichment(domains, creator_info)
                         

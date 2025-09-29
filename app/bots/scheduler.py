@@ -76,19 +76,36 @@ async def run_social_bot():
 
 
 async def run_youtube_scraper():
-    """Scheduled task to scrape YouTube creators for new domains"""
+    """Scheduled task to scrape YouTube creators for new domains - Conservative approach"""
     logger.info("Starting scheduled YouTube creator scraping...")
     
     try:
         # Import here to avoid circular imports
         from app.services.youtube_scraper import run_youtube_creator_scraper
         
-        result = await run_youtube_creator_scraper(max_per_niche=10)
+        # Conservative daily discovery: 25 total creators across high-value niches
+        # Morning: Focus on business/education (higher conversion rate)
+        # Evening: Focus on technology/fitness (medium conversion rate)
+        
+        import datetime
+        current_hour = datetime.datetime.now().hour
+        
+        if 8 <= current_hour <= 12:  # Morning run
+            target_niches = ['business', 'education']
+            max_creators = 15  # 15 creators per niche = 30 total
+            logger.info("Morning run: Targeting business and education creators")
+        else:  # Evening run  
+            target_niches = ['technology', 'fitness']
+            max_creators = 12  # 12 creators per niche = 24 total
+            logger.info("Evening run: Targeting technology and fitness creators")
+        
+        result = await run_youtube_creator_scraper(target_niches, max_creators)
         
         if "error" in result:
             logger.error(f"YouTube scraper failed: {result['error']}")
         else:
             logger.info(f"YouTube scraper completed: Found {result['creators_found']} creators, added {result['domains_added']} new domains")
+            logger.info(f"Quota usage estimate: ~{len(target_niches) * max_creators + 10} requests")
             
     except Exception as e:
         logger.error(f"YouTube scraper error: {str(e)}")
@@ -181,10 +198,10 @@ def start_scheduler():
         replace_existing=True
     )
     
-    # YouTube scraper - runs twice daily to find new creators
+    # YouTube scraper - Conservative daily discovery approach
     scheduler.add_job(
         run_youtube_scraper,
-        trigger=CronTrigger(hour='10,15', minute=0),  # 10 AM and 3 PM daily
+        trigger=CronTrigger(hour='9,16', minute=0),  # 9 AM (morning run) and 4 PM (evening run) daily
         id='youtube_scraper',
         max_instances=1,
         replace_existing=True
@@ -251,6 +268,42 @@ async def trigger_enrichment_now():
 async def trigger_youtube_scraper_now():
     """Manually trigger YouTube creator scraper"""
     await run_youtube_scraper()
+
+
+async def trigger_youtube_conservative():
+    """Conservative discovery: 50 total creators across high-value niches"""
+    logger.info("Running conservative YouTube discovery...")
+    try:
+        from app.services.youtube_scraper import run_youtube_creator_scraper
+        result = await run_youtube_creator_scraper(['business', 'education'], 25)
+        logger.info(f"Conservative run: {result['creators_found']} creators, {result['domains_added']} domains")
+        return result
+    except Exception as e:
+        logger.error(f"Conservative discovery error: {str(e)}")
+
+
+async def trigger_youtube_aggressive():
+    """Aggressive discovery: 300 total creators across all niches (high quota usage)"""
+    logger.info("Running aggressive YouTube discovery...")
+    try:
+        from app.services.youtube_scraper import run_youtube_creator_scraper
+        result = await run_youtube_creator_scraper(None, 50)  # All niches, 50 per niche
+        logger.info(f"Aggressive run: {result['creators_found']} creators, {result['domains_added']} domains")
+        return result
+    except Exception as e:
+        logger.error(f"Aggressive discovery error: {str(e)}")
+
+
+async def trigger_youtube_targeted(niche: str, max_creators: int = 25):
+    """Targeted discovery: Focus on specific niche"""
+    logger.info(f"Running targeted YouTube discovery for {niche}...")
+    try:
+        from app.services.youtube_scraper import run_youtube_creator_scraper
+        result = await run_youtube_creator_scraper([niche], max_creators)
+        logger.info(f"Targeted {niche} run: {result['creators_found']} creators, {result['domains_added']} domains")
+        return result
+    except Exception as e:
+        logger.error(f"Targeted discovery error: {str(e)}")
 
 
 def get_scheduler_status():

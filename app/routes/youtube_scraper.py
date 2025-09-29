@@ -107,6 +107,123 @@ async def scrape_all_niches_endpoint(
         raise HTTPException(status_code=500, detail=f"Error starting all niches scraper: {str(e)}")
 
 
+@router.post("/youtube/conservative")
+async def run_conservative_discovery(background_tasks: BackgroundTasks) -> Dict[str, Any]:
+    """Conservative discovery: ~50 creators, ~100 API requests, high-value niches"""
+    try:
+        from app.bots.scheduler import trigger_youtube_conservative
+        
+        background_tasks.add_task(trigger_youtube_conservative)
+        
+        return {
+            "success": True,
+            "message": "Conservative discovery started (business + education, 25 each)",
+            "estimated_quota": "~100 requests",
+            "expected_results": "~20-30 business domains"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error starting conservative discovery: {str(e)}")
+
+
+@router.post("/youtube/aggressive")  
+async def run_aggressive_discovery(background_tasks: BackgroundTasks) -> Dict[str, Any]:
+    """Aggressive discovery: ~300 creators, ~600 API requests, all niches"""
+    try:
+        from app.bots.scheduler import trigger_youtube_aggressive
+        
+        background_tasks.add_task(trigger_youtube_aggressive)
+        
+        return {
+            "success": True,
+            "message": "Aggressive discovery started (all niches, 50 each)",
+            "estimated_quota": "~600 requests", 
+            "expected_results": "~100-200 total domains",
+            "warning": "High quota usage - use sparingly"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error starting aggressive discovery: {str(e)}")
+
+
+@router.post("/youtube/targeted/{niche}")
+async def run_targeted_discovery(
+    niche: str,
+    max_creators: int = 25,
+    background_tasks: BackgroundTasks = None
+) -> Dict[str, Any]:
+    """Targeted discovery: Focus on specific niche"""
+    
+    valid_niches = ['gaming', 'education', 'fitness', 'business', 'technology', 'creative']
+    
+    if niche not in valid_niches:
+        raise HTTPException(status_code=400, detail=f"Invalid niche. Must be one of: {valid_niches}")
+    
+    try:
+        from app.bots.scheduler import trigger_youtube_targeted
+        
+        if background_tasks:
+            background_tasks.add_task(trigger_youtube_targeted, niche, max_creators)
+            message = f"Targeted {niche} discovery started ({max_creators} creators)"
+        else:
+            result = await trigger_youtube_targeted(niche, max_creators)
+            return {
+                "success": True,
+                "message": f"Targeted {niche} discovery completed",
+                "results": result
+            }
+        
+        return {
+            "success": True,
+            "message": message,
+            "niche": niche,
+            "max_creators": max_creators,
+            "estimated_quota": f"~{max_creators + 10} requests"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error starting targeted discovery: {str(e)}")
+
+
+@router.get("/youtube/quota-usage")
+async def get_quota_usage_estimates() -> Dict[str, Any]:
+    """Get quota usage estimates for different discovery strategies"""
+    return {
+        "success": True,
+        "quota_estimates": {
+            "conservative_daily": {
+                "creators": 50,
+                "requests_per_run": 100,
+                "runs_per_day": 2,
+                "daily_total": 200,
+                "percentage_of_single_key": "2%"
+            },
+            "aggressive_weekly": {
+                "creators": 300,
+                "requests_per_run": 600,  
+                "runs_per_week": 1,
+                "weekly_total": 600,
+                "percentage_of_single_key": "6%"
+            },
+            "targeted_niche": {
+                "creators": 25,
+                "requests_per_run": 35,
+                "description": "Perfect for testing specific niches"
+            }
+        },
+        "recommendations": {
+            "daily_production": "Conservative (200 requests/day)",
+            "weekly_research": "Aggressive (600 requests/week)",  
+            "testing": "Targeted niche (35 requests/test)"
+        },
+        "current_capacity": {
+            "total_daily_quota": 30000,
+            "conservative_runs_possible": 150,
+            "aggressive_runs_possible": 50
+        }
+    }
+
+
 @router.get("/youtube/creators")
 async def get_discovered_creators(
     limit: int = 50,
@@ -309,11 +426,12 @@ async def debug_scraper() -> Dict[str, Any]:
         from app.core.config import settings
         
         debug_info = {
-            "api_key_configured": bool(settings.youtube_api_key),
-            "api_key_length": len(settings.youtube_api_key) if settings.youtube_api_key else 0,
+            "api_keys_configured": len([k for k in [settings.youtube_api_key, settings.youtube_api_key_2, settings.youtube_api_key_3] if k]),
+            "api_key_lengths": [len(k) if k else 0 for k in [settings.youtube_api_key, settings.youtube_api_key_2, settings.youtube_api_key_3]],
+            "total_quota_capacity": len([k for k in [settings.youtube_api_key, settings.youtube_api_key_2, settings.youtube_api_key_3] if k]) * 10000
         }
         
-        # Test API call
+        # Test API call with first available key
         try:
             async with YouTubeCreatorScraper() as scraper:
                 # Test a simple search
@@ -321,6 +439,7 @@ async def debug_scraper() -> Dict[str, Any]:
                 debug_info["api_test_success"] = True
                 debug_info["creators_returned"] = len(creators)
                 debug_info["sample_creator"] = creators[0]['snippet']['title'] if creators else None
+                debug_info["current_key_index"] = scraper.current_key_index
         except Exception as api_error:
             debug_info["api_test_success"] = False
             debug_info["api_error"] = str(api_error)
@@ -344,13 +463,13 @@ async def test_scraper_sync(db: Session = Depends(get_db)) -> Dict[str, Any]:
         debug_steps = []
         
         # Check if API key is available in settings
-        debug_steps.append(f"Settings API key configured: {bool(settings.youtube_api_key)}")
-        debug_steps.append(f"Settings API key length: {len(settings.youtube_api_key) if settings.youtube_api_key else 0}")
+        debug_steps.append(f"API keys configured: {len([k for k in [settings.youtube_api_key, settings.youtube_api_key_2, settings.youtube_api_key_3] if k])}")
+        debug_steps.append(f"Total quota capacity: {len([k for k in [settings.youtube_api_key, settings.youtube_api_key_2, settings.youtube_api_key_3] if k]) * 10000} requests/day")
         
         async with YouTubeCreatorScraper(db) as scraper:
             # Check if API key is available in scraper instance
-            debug_steps.append(f"Scraper API key configured: {bool(scraper.api_key)}")
-            debug_steps.append(f"Scraper API key length: {len(scraper.api_key) if scraper.api_key else 0}")
+            debug_steps.append(f"Scraper API keys available: {len(scraper.api_keys)}")
+            debug_steps.append(f"Current API key index: {scraper.current_key_index + 1}/{len(scraper.api_keys)}")
             
             # Step 1: Search for creators
             keywords = scraper.target_niches.get('gaming', ['gaming'])
@@ -418,4 +537,62 @@ async def test_scraper_sync(db: Session = Depends(get_db)) -> Dict[str, Any]:
             "error": str(e),
             "debug_steps": debug_steps if 'debug_steps' in locals() else [],
             "message": "Scraper test failed"
+        }
+
+
+@router.post("/youtube/test-twitter-enhancement")
+async def test_twitter_enhancement(
+    creator_names: List[str] = None,
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """Test Twitter/X API enhancement for YouTube creators"""
+    
+    if not creator_names:
+        creator_names = ["Business Basics", "Fox Business", "Smosh Games"]
+    
+    try:
+        from app.services.twitter_scraper import TwitterCreatorScraper
+        
+        twitter_scraper = TwitterCreatorScraper()
+        results = []
+        
+        for creator_name in creator_names:
+            print(f"\n🔍 Testing X enhancement for: {creator_name}")
+            
+            # Search for creator on X
+            twitter_data = twitter_scraper.search_creator_by_username(creator_name)
+            
+            if twitter_data:
+                result = {
+                    "creator_name": creator_name,
+                    "twitter_found": True,
+                    "twitter_username": twitter_data.get('twitter_username'),
+                    "twitter_display_name": twitter_data.get('twitter_display_name'),
+                    "twitter_followers": twitter_data.get('twitter_followers', 0),
+                    "twitter_bio": twitter_data.get('twitter_bio', ''),
+                    "website_urls": twitter_data.get('website_urls', []),
+                    "social_urls": twitter_data.get('social_urls', []),
+                    "relevance_score": twitter_data.get('relevance_score', 0),
+                    "status": f"✅ Found @{twitter_data.get('twitter_username')} with {twitter_data.get('twitter_followers', 0):,} followers"
+                }
+            else:
+                result = {
+                    "creator_name": creator_name,
+                    "twitter_found": False,
+                    "status": "❌ Not found on X"
+                }
+            
+            results.append(result)
+        
+        return {
+            "success": True,
+            "results": results,
+            "message": f"Tested X enhancement for {len(creator_names)} creators"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Twitter enhancement test failed"
         }
