@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     hunter_rate_limit_per_day: int = 25  # Free tier limit
     hunter_min_confidence: int = 50  # Minimum confidence score for emails
     
+    # YouTube Data API Configuration
+    youtube_api_key: Optional[str] = None
+    
     # SMTP Configuration
     smtp_server: str
     smtp_port: int = 587

@@ -75,6 +75,25 @@ async def run_social_bot():
         db.close()
 
 
+async def run_youtube_scraper():
+    """Scheduled task to scrape YouTube creators for new domains"""
+    logger.info("Starting scheduled YouTube creator scraping...")
+    
+    try:
+        # Import here to avoid circular imports
+        from app.services.youtube_scraper import run_youtube_creator_scraper
+        
+        result = await run_youtube_creator_scraper(max_per_niche=10)
+        
+        if "error" in result:
+            logger.error(f"YouTube scraper failed: {result['error']}")
+        else:
+            logger.info(f"YouTube scraper completed: Found {result['creators_found']} creators, added {result['domains_added']} new domains")
+            
+    except Exception as e:
+        logger.error(f"YouTube scraper error: {str(e)}")
+
+
 async def run_enrichment_bot():
     """Scheduled task to enrich leads with Hunter.io"""
     logger.info("Starting scheduled lead enrichment...")
@@ -162,6 +181,15 @@ def start_scheduler():
         replace_existing=True
     )
     
+    # YouTube scraper - runs twice daily to find new creators
+    scheduler.add_job(
+        run_youtube_scraper,
+        trigger=CronTrigger(hour='10,15', minute=0),  # 10 AM and 3 PM daily
+        id='youtube_scraper',
+        max_instances=1,
+        replace_existing=True
+    )
+    
     # Health check - runs every minute (lightweight)
     scheduler.add_job(
         lambda: logger.info("Scheduler health check: OK"),
@@ -218,6 +246,11 @@ async def trigger_retarget_now():
 async def trigger_enrichment_now():
     """Manually trigger enrichment bot"""
     await run_enrichment_bot()
+
+
+async def trigger_youtube_scraper_now():
+    """Manually trigger YouTube creator scraper"""
+    await run_youtube_scraper()
 
 
 def get_scheduler_status():
