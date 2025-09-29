@@ -30,6 +30,12 @@ try:
 except ImportError:
     TwitterCreatorScraper = None
 
+# Import GitHub scraper for enhanced creator discovery
+try:
+    from app.services.github_scraper import GitHubCreatorScraper
+except ImportError:
+    GitHubCreatorScraper = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -501,6 +507,51 @@ class YouTubeCreatorScraper:
         
         return additional_domains
     
+    async def enhance_with_github_data(self, creator_info: Dict) -> List[str]:
+        """Enhance creator data with GitHub profile information"""
+        additional_domains = []
+        
+        if not GitHubCreatorScraper:
+            logger.debug("GitHub scraper not available, skipping GitHub enhancement")
+            return additional_domains
+        
+        try:
+            # Initialize GitHub scraper
+            github_scraper = GitHubCreatorScraper()
+            
+            # Search for creator on GitHub
+            creator_name = creator_info.get('channel_name', '')
+            github_data = github_scraper.search_creator_by_name(creator_name)
+            
+            if github_data and github_data.get('relevance_score', 0) > 0.3:
+                # Extract website URLs from GitHub profile
+                website_urls = github_data.get('website_urls', [])
+                
+                for url in website_urls:
+                    try:
+                        domain = urlparse(url).netloc
+                        if domain and domain not in additional_domains:
+                            additional_domains.append(domain)
+                            logger.info(f"Found additional domain from GitHub profile: {domain}")
+                    except Exception as e:
+                        logger.debug(f"Error parsing URL {url}: {str(e)}")
+                
+                # Update creator info with GitHub data
+                creator_info.update({
+                    'github_username': github_data.get('github_username'),
+                    'github_followers': github_data.get('github_followers', 0),
+                    'github_bio': github_data.get('github_bio', ''),
+                    'github_public_repos': github_data.get('github_public_repos', 0),
+                    'github_relevance_score': github_data.get('relevance_score', 0)
+                })
+                
+                logger.info(f"Enhanced {creator_name} with GitHub data: @{github_data.get('github_username')} ({github_data.get('github_followers', 0)} followers)")
+            
+        except Exception as e:
+            logger.error(f"Error enhancing creator with GitHub data: {str(e)}")
+        
+        return additional_domains
+    
     async def log_scraper_run(self, results: Dict):
         """Log scraper execution results"""
         try:
@@ -582,6 +633,12 @@ class YouTubeCreatorScraper:
                     twitter_domains = await self.enhance_with_twitter_data(creator_info)
                     if twitter_domains:
                         domains.extend(twitter_domains)
+                        domains = list(set(domains))  # Remove duplicates
+                    
+                    # Enhance with GitHub data if available
+                    github_domains = await self.enhance_with_github_data(creator_info)
+                    if github_domains:
+                        domains.extend(github_domains)
                         domains = list(set(domains))  # Remove duplicates
                     
                     if domains:

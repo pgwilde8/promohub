@@ -596,3 +596,61 @@ async def test_twitter_enhancement(
             "error": str(e),
             "message": "Twitter enhancement test failed"
         }
+
+
+@router.post("/youtube/test-github-enhancement")
+async def test_github_enhancement(
+    creator_names: List[str] = None,
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """Test GitHub API enhancement for YouTube creators"""
+    
+    if not creator_names:
+        creator_names = ["Fireship", "Traversy Media", "The Net Ninja", "Business Basics"]
+    
+    try:
+        from app.services.github_scraper import GitHubCreatorScraper
+        
+        github_scraper = GitHubCreatorScraper()
+        results = []
+        
+        for creator_name in creator_names:
+            print(f"\n🔍 Testing GitHub enhancement for: {creator_name}")
+            
+            # Search for creator on GitHub
+            github_data = github_scraper.search_creator_by_name(creator_name)
+            
+            if github_data and github_data.get('relevance_score', 0) > 0.3:
+                result = {
+                    "creator_name": creator_name,
+                    "github_found": True,
+                    "github_username": github_data.get('github_username'),
+                    "github_name": github_data.get('github_name'),
+                    "github_followers": github_data.get('github_followers', 0),
+                    "github_bio": github_data.get('github_bio', ''),
+                    "github_public_repos": github_data.get('github_public_repos', 0),
+                    "website_urls": github_data.get('website_urls', []),
+                    "relevance_score": github_data.get('relevance_score', 0),
+                    "status": f"✅ Found @{github_data.get('github_username')} with {github_data.get('github_followers', 0):,} followers"
+                }
+            else:
+                result = {
+                    "creator_name": creator_name,
+                    "github_found": False,
+                    "status": "❌ Not found on GitHub"
+                }
+            
+            results.append(result)
+        
+        return {
+            "success": True,
+            "results": results,
+            "message": f"Tested GitHub enhancement for {len(creator_names)} creators"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "GitHub enhancement test failed"
+        }
