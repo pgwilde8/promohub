@@ -11,6 +11,13 @@ class Settings(BaseSettings):
     
     # OpenAI
     openai_api_key: str
+    openai_model: Optional[str] = "gpt-4"
+    openai_max_tokens: Optional[int] = 2000
+    
+    # Hunter.io Configuration
+    hunter_api_key: Optional[str] = None
+    hunter_rate_limit_per_day: int = 25  # Free tier limit
+    hunter_min_confidence: int = 50  # Minimum confidence score for emails
     
     # SMTP Configuration
     smtp_server: str
@@ -18,6 +25,8 @@ class Settings(BaseSettings):
     smtp_username: str
     smtp_password: str
     smtp_from_email: str
+    smtp_from_name: Optional[str] = "PromoHub Marketing"
+    smtp_use_tls: Optional[bool] = True
     
     # Social Media
     twitter_api_key: Optional[str] = None
@@ -37,6 +46,9 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = True
     port: int = 8000
+    host: Optional[str] = "0.0.0.0"
+    environment: Optional[str] = "development"
+    log_level: Optional[str] = "INFO"
     
     # Product-specific URLs
     ezclub_url: str = "https://ezclub.app"
@@ -45,8 +57,10 @@ class Settings(BaseSettings):
     
     # Marketing Configuration
     email_rate_limit_per_day: int = 100
+    email_rate_limit_per_hour: Optional[int] = 10
     blog_generation_frequency_days: int = 7
     social_posts_per_day: int = 6
+    max_leads_per_campaign: Optional[int] = 1000
     
     # Product Focus Settings
     primary_products: str = "ezclub,ezdirectory"  # comma-separated
@@ -86,6 +100,7 @@ class Settings(BaseSettings):
     
     class Config:
         env_file = ".env"
+        extra = "allow"  # Allow extra fields from .env file
 
 
 settings = Settings()

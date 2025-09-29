@@ -10,6 +10,7 @@ PromoHub is a comprehensive marketing automation platform that runs on your own 
 - AI-personalized cold emails via SMTP
 - Rate-limited sending (50-200 emails/day)
 - Lead status tracking and management
+- Hunter.io integration for email enrichment and verification
 - Integration with MXroute and other SMTP providers
 
 ### ✍️ Content Bot
@@ -53,6 +54,7 @@ PromoHub is a comprehensive marketing automation platform that runs on your own 
 - PostgreSQL database
 - SMTP email service (MXroute recommended)
 - OpenAI API key
+- Hunter.io API key (for lead enrichment)
 - Linux server with systemd (for production)
 
 ## 🚀 Quick Start
@@ -75,8 +77,13 @@ cp .env.example .env
 Required environment variables:
 - `DATABASE_URL`: PostgreSQL connection string
 - `OPENAI_API_KEY`: Your OpenAI API key
+- `HUNTER_API_KEY`: Your Hunter.io API key for lead enrichment
 - `SMTP_*`: Email server configuration
 - `SECRET_KEY`: Secret key for sessions
+
+Optional Hunter.io settings:
+- `HUNTER_RATE_LIMIT_PER_DAY`: Daily API request limit (default: 25)
+- `HUNTER_MIN_CONFIDENCE`: Minimum confidence score for emails (default: 50)
 
 ### 3. Initialize Database
 
@@ -142,6 +149,7 @@ The scheduler runs these bots automatically:
 - **Content Bot:** Weekly on Mondays at 8 AM
 - **Social Bot:** Daily at 10 AM and 2 PM  
 - **Retarget Bot:** Every 4 hours
+- **Enrichment Bot:** Every 30 minutes during business hours
 
 ### Email Rate Limits
 
@@ -158,6 +166,7 @@ Core tables:
 - `content`: Blog posts and content
 - `social_log`: Social media post tracking
 - `page_views`: Website analytics and retargeting data
+- `hunter_log`: Hunter.io API usage tracking for rate limiting
 
 ## 🚀 Production Deployment
 
@@ -232,6 +241,12 @@ sudo certbot --nginx -d your-domain.com
 - `POST /api/leads` - Create new lead
 - `POST /api/demo-bot` - Chat bot interaction
 - `POST /api/track-page-view` - Page view tracking
+
+### Enrichment
+- `GET /api/enrichment/stats` - Get enrichment statistics
+- `POST /api/enrichment/run` - Trigger manual enrichment
+- `POST /api/enrichment/domain/{domain}` - Test domain enrichment
+- `GET /api/enrichment/pending` - Get leads pending enrichment
 
 ### Bot Control
 - `POST /api/trigger-outreach/{lead_id}` - Manual outreach

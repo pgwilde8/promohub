@@ -75,6 +75,25 @@ async def run_social_bot():
         db.close()
 
 
+async def run_enrichment_bot():
+    """Scheduled task to enrich leads with Hunter.io"""
+    logger.info("Starting scheduled lead enrichment...")
+    
+    try:
+        # Import here to avoid circular imports
+        from app.services.enrichment_service import run_enrichment_job
+        
+        result = await run_enrichment_job()
+        
+        if "error" in result:
+            logger.error(f"Enrichment job failed: {result['error']}")
+        else:
+            logger.info(f"Enrichment job completed: {result['enriched']} leads enriched out of {result['processed']} processed")
+            
+    except Exception as e:
+        logger.error(f"Enrichment bot error: {str(e)}")
+
+
 async def run_retarget_bot():
     """Scheduled task to check for retargeting opportunities"""
     logger.info("Starting scheduled retarget bot run...")
@@ -110,7 +129,7 @@ def start_scheduler():
     # Content bot - runs weekly on Mondays at 8 AM
     scheduler.add_job(
         run_content_bot,
-        trigger=CronTrigger(day_of_week='monday', hour=8, minute=0),
+        trigger=CronTrigger(day_of_week='mon', hour=8, minute=0),
         id='content_bot',
         max_instances=1,
         replace_existing=True
@@ -130,6 +149,15 @@ def start_scheduler():
         run_retarget_bot,
         trigger=IntervalTrigger(hours=4),
         id='retarget_bot',
+        max_instances=1,
+        replace_existing=True
+    )
+    
+    # Enrichment bot - runs every 30 minutes during business hours  
+    scheduler.add_job(
+        run_enrichment_bot,
+        trigger=CronTrigger(hour='9-17/1', minute='*/30'),  # Every 30 minutes from 9 AM to 5 PM
+        id='enrichment_bot',
         max_instances=1,
         replace_existing=True
     )
@@ -185,6 +213,11 @@ async def trigger_social_now():
 async def trigger_retarget_now():
     """Manually trigger retarget bot"""
     await run_retarget_bot()
+
+
+async def trigger_enrichment_now():
+    """Manually trigger enrichment bot"""
+    await run_enrichment_bot()
 
 
 def get_scheduler_status():
