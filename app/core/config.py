@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     linkedin_client_secret: Optional[str] = None
     linkedin_access_token: Optional[str] = None
     
+    # GitHub API Configuration
+    github_access_token: Optional[str] = None
+    github_api_url: Optional[str] = "https://api.github.com"
+    github_rate_limit_per_hour: Optional[int] = 5000
+    
     # Security
     secret_key: str
     

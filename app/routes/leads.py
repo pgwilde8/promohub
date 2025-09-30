@@ -16,7 +16,6 @@ async def leads_list(
     request: Request,
     db: Session = Depends(get_db),
     status: Optional[str] = None,
-    source: Optional[str] = None,
     search: Optional[str] = None
 ):
     """List all leads with filtering"""
@@ -26,8 +25,6 @@ async def leads_list(
     # Apply filters
     if status:
         query = query.filter(Lead.status == status)
-    if source:
-        query = query.filter(Lead.source == source)
     if search:
         query = query.filter(
             or_(
@@ -36,22 +33,16 @@ async def leads_list(
                 Lead.company.ilike(f"%{search}%")
             )
         )
-    
     leads = query.order_by(Lead.created_at.desc()).all()
-    
-    # Get unique sources and statuses for filter dropdowns
-    sources = db.query(Lead.source).distinct().all()
+    # Get unique statuses for filter dropdowns
     statuses = db.query(Lead.status).distinct().all()
-    
     return templates.TemplateResponse(
         "leads.html",
         {
             "request": request,
             "leads": leads,
-            "sources": [s[0] for s in sources if s[0]],
             "statuses": [s[0] for s in statuses if s[0]],
             "current_status": status,
-            "current_source": source,
             "search_term": search
         }
     )
@@ -66,8 +57,11 @@ async def new_lead_form(request: Request):
     )
 
 
+
 @router.post("/new")
 async def create_lead(
+    owner_id: int = Form(...),
+    product_id: int = Form(...),
     name: str = Form(...),
     email: str = Form(...),
     company: str = Form(None),
@@ -79,28 +73,20 @@ async def create_lead(
     db: Session = Depends(get_db)
 ):
     """Create a new lead"""
-    
     # Check if email already exists
     existing_lead = db.query(Lead).filter(Lead.email == email).first()
     if existing_lead:
         raise HTTPException(status_code=400, detail="Email already exists")
-    
     lead = Lead(
+        owner_id=owner_id,
+        product_id=product_id,
         name=name,
         email=email,
-        company=company,
-        phone=phone,
-        source=source,
-        platform=platform,
-        url=url,
-        notes=notes,
         status="new"
     )
-    
     db.add(lead)
     db.commit()
     db.refresh(lead)
-    
     return RedirectResponse(url="/leads", status_code=303)
 
 

@@ -13,16 +13,28 @@ from urllib.parse import urlparse
 import re
 import logging
 
+# Import settings for proper configuration loading
+try:
+    from app.core.config import settings
+except ImportError:
+    settings = None
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class GitHubCreatorScraper:
     def __init__(self):
-        # Load credentials from environment
-        self.access_token = os.getenv('GITHUB_ACCESS_TOKEN')
-        self.api_url = os.getenv('GITHUB_API_URL', 'https://api.github.com')
-        self.rate_limit_per_hour = int(os.getenv('GITHUB_RATE_LIMIT_PER_HOUR', '5000'))
+        # Load credentials from settings if available, otherwise fallback to environment
+        if settings:
+            self.access_token = settings.github_access_token
+            self.api_url = settings.github_api_url or 'https://api.github.com'
+            self.rate_limit_per_hour = settings.github_rate_limit_per_hour or 5000
+        else:
+            # Fallback to environment variables
+            self.access_token = os.getenv('GITHUB_ACCESS_TOKEN')
+            self.api_url = os.getenv('GITHUB_API_URL', 'https://api.github.com')
+            self.rate_limit_per_hour = int(os.getenv('GITHUB_RATE_LIMIT_PER_HOUR', '5000'))
         
         # Rate limiting tracking
         self.request_count = 0

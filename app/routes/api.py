@@ -6,17 +6,17 @@ from app.models.base import Lead, PageView
 from app.bots.outreach_bot import OutreachBot
 from pydantic import BaseModel, EmailStr
 import uuid
+import httpx
+import os
 
 router = APIRouter()
 
 
 class LeadCreate(BaseModel):
+    owner_id: int
+    product_id: int
     name: str
     email: EmailStr
-    source: str = "api"
-    platform: str = None
-    company: str = None
-    url: str = None
 
 
 class ChatMessage(BaseModel):
@@ -38,12 +38,10 @@ async def create_lead_api(lead: LeadCreate, db: Session = Depends(get_db)):
         )
     
     new_lead = Lead(
+        owner_id=lead.owner_id,
+        product_id=lead.product_id,
         name=lead.name,
         email=lead.email,
-        source=lead.source,
-        platform=lead.platform,
-        company=lead.company,
-        url=lead.url,
         status="new"
     )
     
@@ -51,6 +49,9 @@ async def create_lead_api(lead: LeadCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_lead)
     
+
+    # Send marketing email via Brevo
+    await send_brevo_marketing_email(new_lead.email, new_lead.name)
     return JSONResponse(
         content={"message": "Lead created successfully", "lead_id": new_lead.id},
         status_code=201
@@ -190,3 +191,129 @@ async def trigger_manual_outreach(
 async def health_check():
     """API health check"""
     return {"status": "healthy", "service": "PromoHub API"}
+
+
+@router.post("/instant-outreach/start")
+async def start_instant_outreach():
+    """Start the instant outreach service"""
+    try:
+        from app.services.instant_outreach import InstantOutreachService
+        
+        # This would typically be managed by a background service manager
+        # For now, we'll return instructions for manual startup
+        
+        return JSONResponse(content={
+            "status": "success",
+            "message": "Instant outreach service configuration ready",
+            "instructions": [
+                "Database trigger will be created on first enrichment",
+                "Service listens for PostgreSQL notifications",
+                "Emails sent within 30 seconds of discovery"
+            ]
+        })
+        
+    except Exception as e:
+        return JSONResponse(content={
+            "status": "error",
+            "message": str(e)
+        }, status_code=500)
+
+
+@router.post("/instant-outreach/test")
+async def test_instant_outreach(db: Session = Depends(get_db)):
+    """Test the instant outreach system"""
+    try:
+        from app.services.instant_outreach import InstantOutreachService
+        
+        service = InstantOutreachService()
+        
+        # Test with a sample creator
+        success = await service.send_instant_outreach(
+            lead_id=14,  # Our coaching.com lead
+            email="joe@coaching.com",
+            domain="coaching.com", 
+            name="YouTube Creator - Coaching"
+        )
+        
+        return JSONResponse(content={
+            "status": "success" if success else "error",
+            "message": f"Test outreach {'sent' if success else 'failed'}",
+            "email": "joe@coaching.com"
+        })
+        
+    except Exception as e:
+        return JSONResponse(content={
+            "status": "error",
+            "message": str(e)
+        }, status_code=500)
+
+
+@router.get("/instant-outreach/status")
+async def get_instant_outreach_status():
+    """Get instant outreach service status"""
+    try:
+        # Check if database trigger exists
+        from app.core.database import SessionLocal
+        from sqlalchemy import text
+        
+        db = SessionLocal()
+        try:
+            result = db.execute(text("""
+                SELECT EXISTS (
+                    SELECT 1 FROM pg_trigger 
+                    WHERE tgname = 'instant_outreach_trigger'
+                )
+            """))
+            trigger_exists = result.scalar()
+            
+            # Count instant outreach emails sent today
+            result = db.execute(text("""
+                SELECT COUNT(*) FROM outreach_log 
+                WHERE email_type = 'instant_outreach' 
+                AND DATE(sent_at) = CURRENT_DATE
+            """))
+            emails_sent_today = result.scalar() or 0
+            
+        finally:
+            db.close()
+        
+        return JSONResponse(content={
+            "status": "operational" if trigger_exists else "setup_required",
+            "trigger_exists": trigger_exists,
+            "emails_sent_today": emails_sent_today,
+            "description": "Sends personalized emails within 30 seconds of email discovery"
+        })
+        
+    except Exception as e:
+        return JSONResponse(content={
+            "status": "error",
+            "message": str(e)
+        }, status_code=500)
+
+
+# Move Brevo email function to module level
+async def send_brevo_marketing_email(to_email, to_name):
+    api_key = os.getenv("BREVO_API_KEY")
+    endpoint = os.getenv("BREVO_ENDPOINT", "https://api.brevo.com/v3/smtp/email")
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json"
+    }
+    payload = {
+        "sender": {"name": "PromoHub Marketing", "email": "marketing@webwisesolutions.dev"},
+        "to": [{"email": to_email, "name": to_name}],
+        "subject": "Welcome to PromoHub!",
+        "htmlContent": "<p>Thank you for your interest in PromoHub. We’ll be in touch soon!</p>"
+    }
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(endpoint, headers=headers, json=payload)
+            if response.status_code in [201, 202]:
+                return True
+            else:
+                print(f"Brevo API error: {response.status_code} - {response.text}")
+                return False
+    except Exception as e:
+        print(f"Exception sending Brevo email: {e}")
+        return False

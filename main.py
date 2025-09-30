@@ -8,6 +8,7 @@ from app.core.database import engine, Base
 from app.routes import dashboard, api, leads, blog
 from app.routes.enrichment import router as enrichment_router
 from app.routes.youtube_scraper import router as youtube_scraper_router
+from app.routes.auth import router as auth_router
 from app.bots.scheduler import start_scheduler, shutdown_scheduler
 
 
@@ -45,6 +46,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Include routers
+app.include_router(auth_router, prefix="", tags=["auth"])
 app.include_router(dashboard.router, prefix="", tags=["dashboard"])
 app.include_router(api.router, prefix="/api", tags=["api"])
 app.include_router(leads.router, prefix="/leads", tags=["leads"])
@@ -55,10 +57,10 @@ app.include_router(youtube_scraper_router, tags=["youtube-scraper"])
 
 @app.get("/")
 async def root(request: Request):
-    """Home page"""
+    """Login page"""
     return templates.TemplateResponse(
-        "dashboard.html", 
-        {"request": request, "title": "PromoHub Dashboard"}
+        "index.html", 
+        {"request": request}
     )
 
 
