@@ -55,87 +55,98 @@
     </div>
 </div>
 
-<!-- Leads Table -->
+<!-- Leads Table with Enrichment Form -->
 <div class="card">
     <div class="card-body">
         {% if leads %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Company</th>
-                        <th>Source</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for lead in leads %}
-                    <tr>
-                        <td>
-                            <strong>{{ lead.name }}</strong>
-                            {% if lead.phone %}
-                                <br><small class="text-muted">{{ lead.phone }}</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="mailto:{{ lead.email }}">{{ lead.email }}</a>
-                        </td>
-                        <td>
-                            {% if lead.company %}
-                                {{ lead.company }}
-                                {% if lead.url %}
-                                    <br><small><a href="{{ lead.url }}" target="_blank" class="text-muted">
-                                        <i class="fas fa-external-link-alt"></i> Website
-                                    </a></small>
+        <form method="post" action="/leads/enrich" id="enrich-form">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="select-all" onclick="toggleAllCheckboxes(this)">
+                                <label for="select-all" class="visually-hidden">Select all</label>
+                            </th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Company</th>
+                            <th>Source</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lead in leads %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="lead_ids[]" value="{{ lead.id }}" class="lead-checkbox">
+                            </td>
+                            <td>
+                                <strong>{{ lead.name }}</strong>
+                                {% if lead.phone %}
+                                    <br><small class="text-muted">{{ lead.phone }}</small>
                                 {% endif %}
-                            {% else %}
-                                <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary">{{ lead.source or 'Unknown' }}</span>
-                            {% if lead.platform %}
-                                <br><small class="text-muted">{{ lead.platform }}</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="badge bg-{{ 
-                                'success' if lead.status == 'new' 
-                                else 'info' if lead.status == 'contacted'
-                                else 'warning' if lead.status == 'replied'
-                                else 'primary' if lead.status == 'converted'
-                                else 'danger' if lead.status == 'unsubscribed'
-                                else 'secondary'
-                            }}">
-                                {{ lead.status.title() }}
-                            </span>
-                        </td>
-                        <td>
-                            <small>{{ lead.created_at.strftime('%m/%d/%Y') }}</small>
-                        </td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="/leads/{{ lead.id }}" class="btn btn-outline-primary">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="/leads/{{ lead.id }}/edit" class="btn btn-outline-secondary">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button type="button" class="btn btn-outline-success" 
-                                        onclick="triggerOutreach({{ lead.id }})">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            </td>
+                            <td>
+                                <a href="mailto:{{ lead.email }}">{{ lead.email }}</a>
+                            </td>
+                            <td>
+                                {% if lead.company %}
+                                    {{ lead.company }}
+                                    {% if lead.url %}
+                                        <br><small><a href="{{ lead.url }}" target="_blank" class="text-muted">
+                                            <i class="fas fa-external-link-alt"></i> Website
+                                        </a></small>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ lead.source|default('Unknown') }}</span>
+                                {% if lead.platform %}
+                                    <br><small class="text-muted">{{ lead.platform }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 
+                                    'success' if lead.status == 'new' 
+                                    else 'info' if lead.status == 'contacted'
+                                    else 'warning' if lead.status == 'replied'
+                                    else 'primary' if lead.status == 'converted'
+                                    else 'danger' if lead.status == 'unsubscribed'
+                                    else 'secondary'
+                                }}">
+                                    {{ lead.status.title() }}
+                                </span>
+                            </td>
+                            <td>
+                                <small>{{ lead.created_at.strftime('%m/%d/%Y') }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/leads/{{ lead.id }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="/leads/{{ lead.id }}/edit" class="btn btn-outline-secondary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-success trigger-outreach-btn" data-lead-id="{{ lead.id }}">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button type="submit" class="btn btn-success mt-2" id="enrich-btn">
+                <i class="fas fa-magic me-1"></i>Enrich Selected with Hunter.io
+            </button>
+        </form>
         {% else %}
         <div class="text-center py-5">
             <i class="fas fa-users fa-3x text-muted mb-3"></i>
@@ -154,13 +165,11 @@
 <script>
 async function triggerOutreach(leadId) {
     if (!confirm('Send outreach email to this lead?')) return;
-    
     try {
         const response = await fetch(`/api/trigger-outreach/${leadId}`, {
             method: 'POST'
         });
         const data = await response.json();
-        
         if (data.status === 'success') {
             alert(data.message);
             location.reload();
@@ -170,6 +179,36 @@ async function triggerOutreach(leadId) {
     } catch (error) {
         alert('Error triggering outreach: ' + error.message);
     }
+}
+
+// Attach event listeners to outreach buttons after DOM loads
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.trigger-outreach-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const leadId = this.getAttribute('data-lead-id');
+            triggerOutreach(leadId);
+        });
+    });
+});
+
+// Select/Deselect all checkboxes
+function toggleAllCheckboxes(source) {
+    const checkboxes = document.querySelectorAll('.lead-checkbox');
+    for (const cb of checkboxes) {
+        cb.checked = source.checked;
+    }
+}
+
+// Optional: Prevent form submit if no leads selected
+var enrichForm = document.getElementById('enrich-form');
+if (enrichForm) {
+    enrichForm.addEventListener('submit', function(e) {
+        const checked = document.querySelectorAll('.lead-checkbox:checked');
+        if (checked.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one lead to enrich.');
+        }
+    });
 }
 </script>
 {% endblock %}
