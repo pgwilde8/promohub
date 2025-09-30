@@ -1,0 +1,514 @@
+{% extends "base.html" %}
+
+{% block title %}Content Generator - PromoHub{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-magic me-2"></i>AI Content Generator</h1>
+                <div>
+                    <button class="btn btn-outline-primary me-2" onclick="showContentCalendar()">
+                        <i class="fas fa-calendar me-1"></i>Content Calendar
+                    </button>
+                    <button class="btn btn-primary" onclick="showQuickGenerate()">
+                        <i class="fas fa-plus me-1"></i>Quick Generate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Generate Form -->
+    <div class="row" id="quick-generate-section">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt me-2"></i>Quick Blog Generation</h5>
+                </div>
+                <div class="card-body">
+                    <form id="quick-generate-form">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="keywords" class="form-label">Keywords *</label>
+                                <input type="text" class="form-control" id="keywords" name="keywords" 
+                                       placeholder="community building, audience engagement, creator monetization" required>
+                                <div class="form-text">Enter keywords separated by commas</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="product_focus" class="form-label">Product Focus</label>
+                                <select class="form-select" id="product_focus" name="product_focus">
+                                    <option value="general">General Marketing</option>
+                                    <option value="ezclub">EZClub (Content Creators)</option>
+                                    <option value="ezdirectory">EZDirectory (Business Owners)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label for="word_count" class="form-label">Word Count</label>
+                                <select class="form-select" id="word_count" name="word_count">
+                                    <option value="800">800 words (Quick read)</option>
+                                    <option value="1000" selected>1000 words (Standard)</option>
+                                    <option value="1500">1500 words (Comprehensive)</option>
+                                    <option value="2000">2000 words (In-depth)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="content_type" class="form-label">Content Type</label>
+                                <select class="form-select" id="content_type" name="content_type">
+                                    <option value="blog_post" selected>Blog Post</option>
+                                    <option value="guide">How-to Guide</option>
+                                    <option value="case_study">Case Study</option>
+                                    <option value="comparison">Comparison Article</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <label for="target_audience" class="form-label">Target Audience (Optional)</label>
+                                <input type="text" class="form-control" id="target_audience" name="target_audience" 
+                                       placeholder="YouTube creators, small business owners, marketers...">
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-magic me-2"></i>Generate Blog Post
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary ms-2" onclick="clearForm()">
+                                    <i class="fas fa-eraser me-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-lightbulb me-2"></i>Keyword Ideas</h6>
+                </div>
+                <div class="card-body">
+                    <h6>EZClub Keywords:</h6>
+                    <div class="mb-3">
+                        <span class="badge bg-primary me-1 mb-1">community building</span>
+                        <span class="badge bg-primary me-1 mb-1">creator monetization</span>
+                        <span class="badge bg-primary me-1 mb-1">audience engagement</span>
+                        <span class="badge bg-primary me-1 mb-1">membership platform</span>
+                        <span class="badge bg-primary me-1 mb-1">content creator tools</span>
+                    </div>
+                    
+                    <h6>EZDirectory Keywords:</h6>
+                    <div class="mb-3">
+                        <span class="badge bg-success me-1 mb-1">local SEO</span>
+                        <span class="badge bg-success me-1 mb-1">business directory</span>
+                        <span class="badge bg-success me-1 mb-1">online visibility</span>
+                        <span class="badge bg-success me-1 mb-1">small business marketing</span>
+                        <span class="badge bg-success me-1 mb-1">local business growth</span>
+                    </div>
+                    
+                    <h6>General Marketing:</h6>
+                    <div>
+                        <span class="badge bg-secondary me-1 mb-1">marketing automation</span>
+                        <span class="badge bg-secondary me-1 mb-1">lead generation</span>
+                        <span class="badge bg-secondary me-1 mb-1">email marketing</span>
+                        <span class="badge bg-secondary me-1 mb-1">social media strategy</span>
+                        <span class="badge bg-secondary me-1 mb-1">content marketing</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Calendar Section -->
+    <div class="row mt-4" id="content-calendar-section" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-calendar me-2"></i>Content Calendar</h5>
+                </div>
+                <div class="card-body">
+                    <div id="calendar-content">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generated Content Results -->
+    <div class="row mt-4" id="generated-content-section" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-file-alt me-2"></i>Generated Content</h5>
+                </div>
+                <div class="card-body">
+                    <div id="generated-content">
+                        <!-- Generated content will appear here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Social Media Distribution -->
+    <div class="row mt-4" id="social-distribution-section" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-share-alt me-2"></i>Social Media Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div id="social-distribution">
+                        <!-- Social media posts will appear here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variables
+let currentContentId = null;
+
+// Form submission
+document.getElementById('quick-generate-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        showLoading('Generating blog post...');
+        
+        const response = await fetch('/api/content-generator/generate-blog-simple', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            currentContentId = result.data.content_id;
+            displayGeneratedContent(result.data);
+            showSocialDistribution();
+        } else {
+            showError('Failed to generate blog post: ' + result.error);
+        }
+    } catch (error) {
+        showError('Error: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+});
+
+// Display generated content
+function displayGeneratedContent(data) {
+    const section = document.getElementById('generated-content-section');
+    const content = document.getElementById('generated-content');
+    
+    content.innerHTML = `
+        <div class="alert alert-success">
+            <h6><i class="fas fa-check-circle me-2"></i>Blog Post Generated Successfully!</h6>
+            <p><strong>Title:</strong> ${data.title}</p>
+            <p><strong>Word Count:</strong> ${data.word_count}</p>
+            <p><strong>SEO Score:</strong> ${data.seo_score}/100</p>
+            <p><strong>Slug:</strong> ${data.slug}</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Social Media Snippets:</h6>
+                <div class="mb-3">
+                    <strong>Twitter:</strong>
+                    <div class="mt-1">
+                        ${data.social_snippets.twitter.map(snippet => 
+                            `<div class="alert alert-light small">${snippet}</div>`
+                        ).join('')}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <strong>LinkedIn:</strong>
+                    <div class="mt-1">
+                        ${data.social_snippets.linkedin.map(snippet => 
+                            `<div class="alert alert-light small">${snippet}</div>`
+                        ).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-3">
+            <a href="/blog/${data.slug}" class="btn btn-primary" target="_blank">
+                <i class="fas fa-external-link-alt me-1"></i>View Blog Post
+            </a>
+            <button class="btn btn-success ms-2" onclick="processForSocial()">
+                <i class="fas fa-share-alt me-1"></i>Create Social Media Posts
+            </button>
+        </div>
+    `;
+    
+    section.style.display = 'block';
+}
+
+// Show social distribution section
+function showSocialDistribution() {
+    const section = document.getElementById('social-distribution-section');
+    section.style.display = 'block';
+}
+
+// Process content for social media
+async function processForSocial() {
+    if (!currentContentId) {
+        showError('No content available for social media processing');
+        return;
+    }
+    
+    try {
+        showLoading('Creating social media posts...');
+        
+        const response = await fetch('/api/content-generator/process-social', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                content_id: currentContentId,
+                platforms: ['twitter', 'linkedin', 'facebook']
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displaySocialPosts(result.data);
+        } else {
+            showError('Failed to create social media posts: ' + result.error);
+        }
+    } catch (error) {
+        showError('Error: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// Display social media posts
+function displaySocialPosts(data) {
+    const content = document.getElementById('social-distribution');
+    
+    let html = `
+        <div class="alert alert-success">
+            <h6><i class="fas fa-check-circle me-2"></i>Social Media Posts Created!</h6>
+            <p>Generated ${data.posts_created} posts across ${data.platforms.join(', ')}</p>
+        </div>
+        
+        <div class="row">
+    `;
+    
+    // Group posts by platform
+    const postsByPlatform = {};
+    data.posts.forEach(post => {
+        if (!postsByPlatform[post.platform]) {
+            postsByPlatform[post.platform] = [];
+        }
+        postsByPlatform[post.platform].push(post);
+    });
+    
+    // Display posts for each platform
+    Object.keys(postsByPlatform).forEach(platform => {
+        const platformPosts = postsByPlatform[platform];
+        const platformIcon = getPlatformIcon(platform);
+        
+        html += `
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>${platformIcon} ${platform.charAt(0).toUpperCase() + platform.slice(1)}</h6>
+                    </div>
+                    <div class="card-body">
+        `;
+        
+        platformPosts.forEach((post, index) => {
+            html += `
+                <div class="mb-3">
+                    <small class="text-muted">Post ${index + 1} (${post.length} chars)</small>
+                    <div class="alert alert-light small">${post.content}</div>
+                </div>
+            `;
+        });
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
+        </div>
+        
+        <div class="text-center mt-3">
+            <button class="btn btn-primary" onclick="scheduleSocialPosts()">
+                <i class="fas fa-clock me-1"></i>Schedule Posts
+            </button>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+}
+
+// Schedule social media posts
+async function scheduleSocialPosts() {
+    if (!currentContentId) {
+        showError('No content available for scheduling');
+        return;
+    }
+    
+    try {
+        showLoading('Scheduling social media posts...');
+        
+        const response = await fetch('/api/content-generator/schedule-social', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                content_id: currentContentId,
+                platforms: ['twitter', 'linkedin', 'facebook'],
+                schedule_delay_hours: 2
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSuccess('Social media posts scheduled successfully!');
+        } else {
+            showError('Failed to schedule posts: ' + result.error);
+        }
+    } catch (error) {
+        showError('Error: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// Show content calendar
+async function showContentCalendar() {
+    const section = document.getElementById('content-calendar-section');
+    const content = document.getElementById('calendar-content');
+    
+    section.style.display = 'block';
+    
+    try {
+        showLoading('Loading content calendar...');
+        
+        const response = await fetch('/api/content-generator/content-calendar?days=30');
+        const result = await response.json();
+        
+        if (result.success) {
+            displayContentCalendar(result.data);
+        } else {
+            showError('Failed to load content calendar');
+        }
+    } catch (error) {
+        showError('Error: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// Display content calendar
+function displayContentCalendar(calendar) {
+    const content = document.getElementById('calendar-content');
+    
+    let html = '<div class="row">';
+    
+    calendar.forEach((item, index) => {
+        const badgeClass = item.product_focus === 'ezclub' ? 'bg-primary' : 
+                          item.product_focus === 'ezdirectory' ? 'bg-success' : 'bg-secondary';
+        
+        html += `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6>${item.suggested_title}</h6>
+                        <p class="small text-muted">Keywords: ${item.keywords.join(', ')}</p>
+                        <span class="badge ${badgeClass}">${item.product_focus}</span>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="generateFromCalendar('${item.keywords.join(',')}', '${item.product_focus}')">
+                                Generate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    content.innerHTML = html;
+}
+
+// Generate content from calendar
+function generateFromCalendar(keywords, productFocus) {
+    document.getElementById('keywords').value = keywords;
+    document.getElementById('product_focus').value = productFocus;
+    
+    // Scroll to form
+    document.getElementById('quick-generate-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Utility functions
+function getPlatformIcon(platform) {
+    const icons = {
+        'twitter': '<i class="fab fa-twitter text-primary"></i>',
+        'linkedin': '<i class="fab fa-linkedin text-primary"></i>',
+        'facebook': '<i class="fab fa-facebook text-primary"></i>',
+        'instagram': '<i class="fab fa-instagram text-danger"></i>'
+    };
+    return icons[platform] || '<i class="fas fa-share-alt"></i>';
+}
+
+function clearForm() {
+    document.getElementById('quick-generate-form').reset();
+    document.getElementById('generated-content-section').style.display = 'none';
+    document.getElementById('social-distribution-section').style.display = 'none';
+    currentContentId = null;
+}
+
+function showLoading(message) {
+    // You can implement a loading spinner here
+    console.log('Loading: ' + message);
+}
+
+function hideLoading() {
+    // Hide loading spinner
+    console.log('Loading complete');
+}
+
+function showError(message) {
+    alert('Error: ' + message);
+}
+
+function showSuccess(message) {
+    alert('Success: ' + message);
+}
+</script>
+{% endblock %}

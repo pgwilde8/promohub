@@ -64,12 +64,12 @@
                         <div class="col-md-4">
                             <label for="source" class="form-label">Source</label>
                             <select class="form-select" name="source">
-                                <option value="manual" {{ 'selected' if not lead or lead.source == 'manual' }}>Manual</option>
-                                <option value="website" {{ 'selected' if lead and lead.source == 'website' }}>Website</option>
-                                <option value="social" {{ 'selected' if lead and lead.source == 'social' }}>Social Media</option>
-                                <option value="referral" {{ 'selected' if lead and lead.source == 'referral' }}>Referral</option>
-                                <option value="demo_chat" {{ 'selected' if lead and lead.source == 'demo_chat' }}>Demo Chat</option>
-                                <option value="api" {{ 'selected' if lead and lead.source == 'api' }}>API</option>
+                                <option value="manual" {{ 'selected' if not lead or lead.lead_source == 'manual' }}>Manual</option>
+                                <option value="website" {{ 'selected' if lead and lead.lead_source == 'website' }}>Website</option>
+                                <option value="social" {{ 'selected' if lead and lead.lead_source == 'social' }}>Social Media</option>
+                                <option value="referral" {{ 'selected' if lead and lead.lead_source == 'referral' }}>Referral</option>
+                                <option value="demo_chat" {{ 'selected' if lead and lead.lead_source == 'demo_chat' }}>Demo Chat</option>
+                                <option value="api" {{ 'selected' if lead and lead.lead_source == 'api' }}>API</option>
                             </select>
                         </div>
                         <div class="col-md-4">

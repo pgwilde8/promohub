@@ -128,28 +128,28 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if lead.source == 'manual' %}
+                                {% if lead.lead_source == 'manual' %}
                                     <span class="badge bg-success" title="Manually added - email preserved during enrichment">
                                         <i class="fas fa-hand-paper me-1"></i>Manual
                                     </span>
-                                {% elif lead.source == 'demo_chat' %}
+                                {% elif lead.lead_source == 'demo_chat' %}
                                     <span class="badge bg-info" title="From demo chat - email preserved during enrichment">
                                         <i class="fas fa-comments me-1"></i>Demo Chat
                                     </span>
-                                {% elif lead.source == 'api' %}
+                                {% elif lead.lead_source == 'api' %}
                                     <span class="badge bg-primary" title="Via API - email preserved during enrichment">
                                         <i class="fas fa-code me-1"></i>API
                                     </span>
-                                {% elif 'domain_scraping' in (lead.source or '') %}
+                                {% elif 'domain_scraping' in (lead.lead_source or '') %}
                                     <span class="badge bg-warning" title="From domain scraping - email may be enriched">
                                         <i class="fas fa-search me-1"></i>Domain Scraping
                                     </span>
-                                {% elif 'youtube' in (lead.source or '') %}
+                                {% elif 'youtube' in (lead.lead_source or '') %}
                                     <span class="badge bg-danger" title="From YouTube discovery - email may be enriched">
                                         <i class="fab fa-youtube me-1"></i>YouTube
                                     </span>
                                 {% else %}
-                                    <span class="badge bg-secondary">{{ lead.source|default('Unknown') }}</span>
+                                    <span class="badge bg-secondary">{{ lead.lead_source|default('Unknown') }}</span>
                                 {% endif %}
                                 {% if lead.platform %}
                                     <br><small class="text-muted">{{ lead.platform }}</small>

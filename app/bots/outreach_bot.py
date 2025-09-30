@@ -104,7 +104,7 @@ class OutreachBot:
         """
         
         try:
-            response = await openai.ChatCompletion.acreate(
+            response = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=300,

@@ -82,7 +82,8 @@ async def create_lead(
         product_id=product_id,
         name=name,
         email=email,
-        status="new"
+        status="new",
+        lead_source=source  # Map form 'source' to database 'lead_source'
     )
     db.add(lead)
     db.commit()
@@ -165,7 +166,7 @@ async def update_lead(
     lead.email = email
     lead.company = company
     lead.phone = phone
-    lead.source = source
+    lead.lead_source = source
     lead.platform = platform
     lead.url = url
     lead.notes = notes

@@ -17,6 +17,7 @@ class LeadCreate(BaseModel):
     product_id: int
     name: str
     email: EmailStr
+    lead_source: str = "api"  # Default to "api" for API-created leads
 
 
 class ChatMessage(BaseModel):
@@ -42,7 +43,8 @@ async def create_lead_api(lead: LeadCreate, db: Session = Depends(get_db)):
         product_id=lead.product_id,
         name=lead.name,
         email=lead.email,
-        status="new"
+        status="new",
+        lead_source=lead.lead_source
     )
     
     db.add(new_lead)
@@ -94,7 +96,7 @@ async def demo_chat_bot(
             new_lead = Lead(
                 name=message.name or "Demo User",
                 email=message.email,
-                source="demo_chat",
+                lead_source="demo_chat",
                 platform="promohub",
                 status="new"
             )

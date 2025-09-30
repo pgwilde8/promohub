@@ -9,6 +9,12 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
+@router.get("/content-generator")
+async def content_generator(request: Request):
+    """Content generator page"""
+    return templates.TemplateResponse("content_generator.html", {"request": request})
+
+
 @router.get("/dashboard")
 async def dashboard(request: Request, db: Session = Depends(get_db)):
     """Main admin dashboard"""
