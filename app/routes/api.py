@@ -102,6 +102,9 @@ async def demo_chat_bot(
             db.commit()
             db.refresh(new_lead)
             lead_id = new_lead.id
+            
+            # Send marketing email via Brevo
+            await send_brevo_marketing_email(new_lead.email, new_lead.name)
             response_text += " Thanks for providing your email - our team will be in touch soon!"
     
     return JSONResponse(content={

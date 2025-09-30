@@ -10,6 +10,29 @@
     </a>
 </div>
 
+<!-- Email Preservation Info -->
+<div class="alert alert-info mb-4">
+    <h6><i class="fas fa-shield-alt me-2"></i>Smart Email Preservation</h6>
+    <p class="mb-2">Our system automatically protects your manually added contacts:</p>
+    <div class="row">
+        <div class="col-md-6">
+            <small>
+                <strong>🛡️ Protected Sources:</strong><br>
+                • <span class="badge bg-success me-1">Manual</span> - Added via web form<br>
+                • <span class="badge bg-info me-1">Demo Chat</span> - From demo bot<br>
+                • <span class="badge bg-primary me-1">API</span> - Via API endpoint
+            </small>
+        </div>
+        <div class="col-md-6">
+            <small>
+                <strong>🔄 Enriched Sources:</strong><br>
+                • <span class="badge bg-warning me-1">Domain Scraping</span> - Gets real emails<br>
+                • <span class="badge bg-danger me-1">YouTube</span> - Enhanced with Hunter.io
+            </small>
+        </div>
+    </div>
+</div>
+
 <!-- Filters -->
 <div class="card mb-4">
     <div class="card-body">
@@ -105,7 +128,29 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="badge bg-secondary">{{ lead.source|default('Unknown') }}</span>
+                                {% if lead.source == 'manual' %}
+                                    <span class="badge bg-success" title="Manually added - email preserved during enrichment">
+                                        <i class="fas fa-hand-paper me-1"></i>Manual
+                                    </span>
+                                {% elif lead.source == 'demo_chat' %}
+                                    <span class="badge bg-info" title="From demo chat - email preserved during enrichment">
+                                        <i class="fas fa-comments me-1"></i>Demo Chat
+                                    </span>
+                                {% elif lead.source == 'api' %}
+                                    <span class="badge bg-primary" title="Via API - email preserved during enrichment">
+                                        <i class="fas fa-code me-1"></i>API
+                                    </span>
+                                {% elif 'domain_scraping' in (lead.source or '') %}
+                                    <span class="badge bg-warning" title="From domain scraping - email may be enriched">
+                                        <i class="fas fa-search me-1"></i>Domain Scraping
+                                    </span>
+                                {% elif 'youtube' in (lead.source or '') %}
+                                    <span class="badge bg-danger" title="From YouTube discovery - email may be enriched">
+                                        <i class="fab fa-youtube me-1"></i>YouTube
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ lead.source|default('Unknown') }}</span>
+                                {% endif %}
                                 {% if lead.platform %}
                                     <br><small class="text-muted">{{ lead.platform }}</small>
                                 {% endif %}

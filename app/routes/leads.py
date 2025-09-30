@@ -87,6 +87,11 @@ async def create_lead(
     db.add(lead)
     db.commit()
     db.refresh(lead)
+    
+    # Send marketing email via Brevo
+    from app.routes.api import send_brevo_marketing_email
+    await send_brevo_marketing_email(lead.email, lead.name)
+    
     return RedirectResponse(url="/leads", status_code=303)
 
 

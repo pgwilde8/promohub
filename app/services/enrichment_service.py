@@ -199,23 +199,62 @@ class HunterEnrichmentService:
             sources = email_data.get("sources", [])
             source_url = sources[0].get("uri") if sources else None
             
-            # Update the lead record
-            update_query = text("""
-                UPDATE leads 
-                SET 
-                    email = :email,
-                    organization = :organization,
-                    type = :type,
-                    confidence = :confidence,
-                    source_url = :source_url,
-                    verified = :verified,
-                    enriched_at = NOW(),
-                    hunter_data = :hunter_data
-                WHERE id = :lead_id
-            """)
+            # Check if this lead already has a manually added email
+            lead_check = self.db.execute(
+                text("SELECT email, lead_source FROM leads WHERE id = :lead_id"),
+                {"lead_id": lead_id}
+            ).fetchone()
             
-            self.db.execute(update_query, {
-                "email": email_data.get("value"),
+            # Only overwrite email if it's from domain scraping or if current email is placeholder
+            should_update_email = False
+            if lead_check:
+                current_email = lead_check[0]
+                lead_source = lead_check[1]
+                
+                # Update email if:
+                # 1. Current email is a placeholder (unknown@domain.com)
+                # 2. Lead source is from domain scraping
+                # 3. Current email is null/empty
+                if (current_email and "unknown@" in current_email) or \
+                   (lead_source and "domain_scraping" in lead_source) or \
+                   not current_email:
+                    should_update_email = True
+                    logger.info(f"✅ Updating email for lead {lead_id} (source: {lead_source}, current: {current_email})")
+                else:
+                    logger.info(f"🛡️ Preserving manual email for lead {lead_id} (source: {lead_source}, current: {current_email})")
+            
+            # Build dynamic update query based on whether we should update email
+            if should_update_email:
+                update_query = text("""
+                    UPDATE leads 
+                    SET 
+                        email = :email,
+                        organization = :organization,
+                        type = :type,
+                        confidence = :confidence,
+                        source_url = :source_url,
+                        verified = :verified,
+                        enriched_at = NOW(),
+                        hunter_data = :hunter_data
+                    WHERE id = :lead_id
+                """)
+            else:
+                # Update everything except email
+                update_query = text("""
+                    UPDATE leads 
+                    SET 
+                        organization = :organization,
+                        type = :type,
+                        confidence = :confidence,
+                        source_url = :source_url,
+                        verified = :verified,
+                        enriched_at = NOW(),
+                        hunter_data = :hunter_data
+                    WHERE id = :lead_id
+                """)
+            
+            # Prepare parameters based on whether we're updating email
+            params = {
                 "organization": domain_info.get("organization"),
                 "type": email_data.get("type"),
                 "confidence": email_data.get("confidence"),
@@ -223,7 +262,13 @@ class HunterEnrichmentService:
                 "verified": email_data.get("confidence", 0) >= 70,
                 "hunter_data": str(email_data),  # Store full data as JSON string
                 "lead_id": lead_id
-            })
+            }
+            
+            # Only add email parameter if we're updating it
+            if should_update_email:
+                params["email"] = email_data.get("value")
+            
+            self.db.execute(update_query, params)
             
             self.db.commit()
             

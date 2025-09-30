@@ -25,19 +25,45 @@ class EnhancedEnrichmentService(HunterEnrichmentService):
     async def update_lead_with_enrichment_simple(self, lead_id: int, email: str) -> bool:
         """Update lead with email using current database schema"""
         try:
-            # Simple update that works with current schema
-            update_query = text("UPDATE leads SET email = :email WHERE id = :lead_id")
+            # Check if this lead already has a manually added email
+            lead_check = self.db.execute(
+                text("SELECT email, lead_source FROM leads WHERE id = :lead_id"),
+                {"lead_id": lead_id}
+            ).fetchone()
             
-            self.db.execute(update_query, {
-                "email": email,
-                "lead_id": lead_id
-            })
+            # Only update email if it's appropriate
+            should_update_email = False
+            if lead_check:
+                current_email = lead_check[0]
+                lead_source = lead_check[1]
+                
+                # Update email if:
+                # 1. Current email is a placeholder (unknown@domain.com)
+                # 2. Lead source is from domain scraping
+                # 3. Current email is null/empty
+                if (current_email and "unknown@" in current_email) or \
+                   (lead_source and "domain_scraping" in lead_source) or \
+                   not current_email:
+                    should_update_email = True
+                    logger.info(f"✅ Updating email for lead {lead_id} (source: {lead_source}, current: {current_email})")
+                else:
+                    logger.info(f"🛡️ Preserving manual email for lead {lead_id} (source: {lead_source}, current: {current_email})")
+                    return True  # Success but no update needed
             
-            self.db.commit()
-            logger.info(f"✅ Updated lead {lead_id} with email: {email}")
-            
-            # Trigger instant outreach
-            await self.trigger_instant_outreach(lead_id, email)
+            if should_update_email:
+                # Simple update that works with current schema
+                update_query = text("UPDATE leads SET email = :email WHERE id = :lead_id")
+                
+                self.db.execute(update_query, {
+                    "email": email,
+                    "lead_id": lead_id
+                })
+                
+                self.db.commit()
+                logger.info(f"✅ Updated lead {lead_id} with email: {email}")
+                
+                # Trigger instant outreach
+                await self.trigger_instant_outreach(lead_id, email)
             
             return True
             
