@@ -86,13 +86,15 @@ class EnhancedContentGenerator:
             slug = self._create_slug(parsed_content["title"])
             
             # Save to database
+            from datetime import datetime
             blog_post = Content(
                 title=parsed_content["title"],
                 body=parsed_content["content"],
                 meta_description=parsed_content["meta_description"],
                 tags=parsed_content["tags"],
                 slug=slug,
-                status="draft",
+                status="published",  # Publish immediately
+                published_at=datetime.now(),
                 content_type=content_type,
                 target_audience=target_audience or template["audience"],
                 content_angle=self._determine_content_angle(keywords, product_focus),
@@ -215,30 +217,80 @@ class EnhancedContentGenerator:
             "instagram": []
         }
         
-        # Extract key quotes and insights
-        paragraphs = content.split('\n\n')
+        # Clean content and extract meaningful paragraphs
+        import re
         
+        # Remove markdown headers and clean up
+        cleaned_content = re.sub(r'^#+\s*', '', content, flags=re.MULTILINE)
+        cleaned_content = re.sub(r'\*\*(.*?)\*\*', r'\1', cleaned_content)  # Remove bold
+        cleaned_content = re.sub(r'\*(.*?)\*', r'\1', cleaned_content)     # Remove italic
+        
+        paragraphs = [p.strip() for p in cleaned_content.split('\n\n') if p.strip()]
+        
+        # Extract meaningful content (skip very short or very long paragraphs)
+        meaningful_paragraphs = []
         for paragraph in paragraphs:
-            if len(paragraph.strip()) > 50:  # Skip short paragraphs
-                # Twitter snippets (under 280 characters)
-                if len(paragraph) <= 280:
-                    snippets["twitter"].append(paragraph.strip())
-                
-                # LinkedIn snippets (longer, professional)
-                if 100 <= len(paragraph) <= 500:
-                    snippets["linkedin"].append(paragraph.strip())
-                
-                # Facebook snippets (medium length)
-                if 50 <= len(paragraph) <= 300:
-                    snippets["facebook"].append(paragraph.strip())
-                
-                # Instagram snippets (shorter, visual-friendly)
-                if 20 <= len(paragraph) <= 200:
-                    snippets["instagram"].append(paragraph.strip())
+            # Skip headers, lists, and very short content
+            if (len(paragraph) > 80 and 
+                not paragraph.startswith('##') and 
+                not paragraph.startswith('1.') and
+                not paragraph.startswith('2.') and
+                not paragraph.startswith('3.') and
+                not paragraph.startswith('4.') and
+                not paragraph.startswith('5.') and
+                not paragraph.startswith('-') and
+                not paragraph.startswith('*')):
+                meaningful_paragraphs.append(paragraph)
         
-        # Limit to 3-5 snippets per platform
+        # Create platform-specific snippets
+        for paragraph in meaningful_paragraphs[:8]:  # Limit to 8 paragraphs
+            # Twitter snippets (under 280 characters, engaging)
+            if 100 <= len(paragraph) <= 250:
+                # Add some engagement elements
+                twitter_snippet = paragraph
+                if not twitter_snippet.endswith('?'):
+                    twitter_snippet += " What's your experience with this?"
+                snippets["twitter"].append(twitter_snippet)
+            
+            # LinkedIn snippets (professional, longer)
+            if 150 <= len(paragraph) <= 400:
+                linkedin_snippet = paragraph
+                if not linkedin_snippet.endswith('.'):
+                    linkedin_snippet += "."
+                snippets["linkedin"].append(linkedin_snippet)
+            
+            # Facebook snippets (conversational, medium length)
+            if 100 <= len(paragraph) <= 300:
+                facebook_snippet = paragraph
+                if not facebook_snippet.endswith('!'):
+                    facebook_snippet += " What do you think?"
+                snippets["facebook"].append(facebook_snippet)
+            
+            # Instagram snippets (shorter, inspirational)
+            if 80 <= len(paragraph) <= 200:
+                instagram_snippet = paragraph
+                if not instagram_snippet.endswith('.'):
+                    instagram_snippet += " ✨"
+                snippets["instagram"].append(instagram_snippet)
+        
+        # Ensure we have at least some content for each platform
+        if not snippets["twitter"] and meaningful_paragraphs:
+            # Create a summary for Twitter
+            summary = meaningful_paragraphs[0][:200] + "..." if len(meaningful_paragraphs[0]) > 200 else meaningful_paragraphs[0]
+            snippets["twitter"].append(summary)
+        
+        if not snippets["linkedin"] and meaningful_paragraphs:
+            snippets["linkedin"].append(meaningful_paragraphs[0])
+        
+        if not snippets["facebook"] and meaningful_paragraphs:
+            snippets["facebook"].append(meaningful_paragraphs[0])
+        
+        if not snippets["instagram"] and meaningful_paragraphs:
+            snippets["instagram"].append(meaningful_paragraphs[0])
+        
+        # Limit to 3-4 snippets per platform
         for platform in snippets:
-            snippets[platform] = snippets[platform][:5]
+            snippets[platform] = snippets[platform][:4]
         
         return snippets
     

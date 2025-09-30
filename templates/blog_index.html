@@ -1,194 +1,80 @@
-{% extends "blog_base.html" %}
+{% extends "base.html" %}
+
+{% block title %}Blog - PromoHub{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8 mx-auto">
-        <header class="text-center mb-5">
-            <h1 class="display-4">PromoHub Blog</h1>
-            <p class="lead">Marketing insights, automation tips, and business growth strategies</p>
-        </header>
-
-        {% if posts %}
-            {% for post in posts %}
-            <article class="card mb-4 shadow-sm">
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-blog me-2"></i>PromoHub Blog</h1>
+                <a href="/content-generator" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create New Article
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    {% if posts %}
+    <div class="row">
+        {% for post in posts %}
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
                 <div class="card-body">
-                    <h2 class="card-title">
+                    <h5 class="card-title">
                         <a href="/blog/{{ post.slug }}" class="text-decoration-none">
                             {{ post.title }}
                         </a>
-                    </h2>
+                    </h5>
                     
                     {% if post.meta_description %}
-                    <p class="card-text text-muted">{{ post.meta_description }}</p>
-                    {% else %}
-                    <p class="card-text">{{ post.body[:200] }}...</p>
+                    <p class="card-text text-muted">{{ post.meta_description[:150] }}{% if post.meta_description|length > 150 %}...{% endif %}</p>
                     {% endif %}
+                    
+                    <div class="d-flex align-items-center text-muted small mb-3">
+                        <i class="fas fa-calendar me-1"></i>
+                        <span>{{ post.published_at.strftime('%B %d, %Y') if post.published_at else post.created_at.strftime('%B %d, %Y') }}</span>
+                        <span class="mx-2">•</span>
+                        <i class="fas fa-clock me-1"></i>
+                        <span>{{ (post.body|length / 200)|round|int }} min read</span>
+                        {% if post.tags %}
+                        <span class="mx-2">•</span>
+                        <i class="fas fa-tags me-1"></i>
+                        <span>{{ post.tags.split(',')[0] }}</span>
+                        {% endif %}
+                    </div>
                     
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            {% if post.tags %}
-                                {% for tag in post.tags.split(',') %}
-                                <span class="badge bg-primary me-1">{{ tag.strip() }}</span>
-                                {% endfor %}
+                            {% if post.content_type %}
+                            <span class="badge bg-primary me-1">{{ post.content_type|title }}</span>
+                            {% endif %}
+                            {% if post.content_angle %}
+                            <span class="badge bg-info">{{ post.content_angle|title }}</span>
                             {% endif %}
                         </div>
-                        <small class="text-muted">
-                            Published {{ post.published_at.strftime('%B %d, %Y') }}
-                        </small>
-                    </div>
-                    
-                    <div class="mt-3">
-                        <a href="/blog/{{ post.slug }}" class="btn btn-outline-primary">
+                        <a href="/blog/{{ post.slug }}" class="btn btn-outline-primary btn-sm">
                             Read More <i class="fas fa-arrow-right ms-1"></i>
                         </a>
                     </div>
                 </div>
-            </article>
-            {% endfor %}
-        {% else %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
             <div class="text-center py-5">
                 <i class="fas fa-blog fa-3x text-muted mb-3"></i>
-                <h3>No blog posts yet</h3>
-                <p class="text-muted">Check back soon for marketing insights and tips!</p>
+                <h3 class="text-muted">No blog posts yet</h3>
+                <p class="text-muted">Create your first article using our AI content generator!</p>
+                <a href="/content-generator" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create First Article
+                </a>
             </div>
-        {% endif %}
-    </div>
-</div>
-
-<!-- Demo Chat Widget -->
-<div id="chat-widget" class="position-fixed bottom-0 end-0 m-3">
-    <button class="btn btn-primary rounded-circle" onclick="toggleChat()" style="width: 60px; height: 60px;">
-        <i class="fas fa-comments"></i>
-    </button>
-    
-    <div id="chat-panel" class="card shadow-lg" style="width: 350px; height: 400px; display: none;">
-        <div class="card-header bg-primary text-white">
-            <div class="d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">
-                    <i class="fas fa-robot me-2"></i>PromoHub Assistant
-                </h6>
-                <button class="btn btn-sm btn-outline-light" onclick="toggleChat()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
-        <div class="card-body d-flex flex-column" style="height: 300px;">
-            <div id="chat-messages" class="flex-grow-1 overflow-auto mb-3">
-                <div class="alert alert-info small">
-                    Hi! I'm here to help you learn about PromoHub. Ask me about pricing, features, or anything else!
-                </div>
-            </div>
-            <form id="chat-form" onsubmit="sendMessage(event)">
-                <div class="input-group">
-                    <input type="text" id="chat-input" class="form-control" placeholder="Type your message...">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
+    {% endif %}
 </div>
-
-<script>
-// Page view tracking
-fetch('/api/track-page-view', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({page: window.location.pathname})
-}).catch(console.error);
-
-// Chat widget functionality
-function toggleChat() {
-    const panel = document.getElementById('chat-panel');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-}
-
-async function sendMessage(event) {
-    event.preventDefault();
-    
-    const input = document.getElementById('chat-input');
-    const message = input.value.trim();
-    if (!message) return;
-    
-    const messagesDiv = document.getElementById('chat-messages');
-    
-    // Add user message
-    messagesDiv.innerHTML += `
-        <div class="text-end mb-2">
-            <span class="badge bg-primary">${message}</span>
-        </div>
-    `;
-    
-    input.value = '';
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    
-    try {
-        const response = await fetch('/api/demo-bot', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({message})
-        });
-        
-        const data = await response.json();
-        
-        // Add bot response
-        messagesDiv.innerHTML += `
-            <div class="text-start mb-2">
-                <div class="alert alert-light small mb-0">${data.response}</div>
-            </div>
-        `;
-        
-        // If bot asks for email, show email form
-        if (data.response.includes('email')) {
-            messagesDiv.innerHTML += `
-                <div class="text-start mb-2">
-                    <form onsubmit="captureEmail(event)" class="small">
-                        <div class="input-group input-group-sm">
-                            <input type="email" name="email" class="form-control" placeholder="your@email.com" required>
-                            <button type="submit" class="btn btn-outline-primary">Submit</button>
-                        </div>
-                    </form>
-                </div>
-            `;
-        }
-        
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    } catch (error) {
-        messagesDiv.innerHTML += `
-            <div class="text-start mb-2">
-                <div class="alert alert-danger small">Sorry, I'm having trouble right now. Please try again!</div>
-            </div>
-        `;
-    }
-}
-
-async function captureEmail(event) {
-    event.preventDefault();
-    const email = event.target.email.value;
-    
-    try {
-        await fetch('/api/demo-bot', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                message: 'Email captured',
-                email: email,
-                name: 'Blog Visitor'
-            })
-        });
-        
-        event.target.style.display = 'none';
-        
-        const messagesDiv = document.getElementById('chat-messages');
-        messagesDiv.innerHTML += `
-            <div class="text-start mb-2">
-                <div class="alert alert-success small">Thanks! We'll be in touch soon.</div>
-            </div>
-        `;
-    } catch (error) {
-        console.error('Error capturing email:', error);
-    }
-}
-</script>
 {% endblock %}

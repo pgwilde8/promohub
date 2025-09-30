@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - PromoHub Blog{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Blog Post Content -->
+            <article class="blog-post">
+                <header class="mb-4">
+                    <h1 class="display-4 fw-bold text-primary">{{ post.title }}</h1>
+                    
+                    <div class="d-flex align-items-center text-muted mb-3">
+                        <i class="fas fa-calendar me-2"></i>
+                        <span>{{ post.published_at.strftime('%B %d, %Y') if post.published_at else post.created_at.strftime('%B %d, %Y') }}</span>
+                        <span class="mx-2">•</span>
+                        <i class="fas fa-clock me-1"></i>
+                        <span>{{ (post.body|length / 200)|round|int }} min read</span>
+                        {% if post.tags %}
+                        <span class="mx-2">•</span>
+                        <i class="fas fa-tags me-1"></i>
+                        <span>{{ post.tags }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if post.meta_description %}
+                    <p class="lead text-muted">{{ post.meta_description }}</p>
+                    {% endif %}
+                </header>
+                
+                <div class="blog-content">
+                    {{ post.body|safe }}
+                </div>
+                
+                <footer class="mt-5 pt-4 border-top">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Share this article:</h6>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="shareOnTwitter()">
+                                    <i class="fab fa-twitter"></i> Twitter
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="shareOnLinkedIn()">
+                                    <i class="fab fa-linkedin"></i> LinkedIn
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="shareOnFacebook()">
+                                    <i class="fab fa-facebook"></i> Facebook
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="/blog" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Back to Blog
+                            </a>
+                        </div>
+                    </div>
+                </footer>
+            </article>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Sidebar -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Article Info</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Content Type:</strong><br>
+                        <span class="badge bg-primary">{{ post.content_type|title }}</span>
+                    </div>
+                    
+                    {% if post.target_audience %}
+                    <div class="mb-3">
+                        <strong>Target Audience:</strong><br>
+                        <small class="text-muted">{{ post.target_audience }}</small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if post.content_angle %}
+                    <div class="mb-3">
+                        <strong>Content Angle:</strong><br>
+                        <span class="badge bg-info">{{ post.content_angle|title }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if post.target_keywords %}
+                    <div class="mb-3">
+                        <strong>Keywords:</strong><br>
+                        <small class="text-muted">{{ post.target_keywords }}</small>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <strong>Word Count:</strong><br>
+                        <span class="badge bg-success">{{ (post.body|length / 5)|round|int }} words</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Related Articles -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-newspaper me-2"></i>Related Articles</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">More articles coming soon!</p>
+                    <a href="/blog" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list me-1"></i> View All Articles
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function shareOnTwitter() {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent('{{ post.title }}');
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+}
+
+function shareOnLinkedIn() {
+    const url = encodeURIComponent(window.location.href);
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
+}
+
+function shareOnFacebook() {
+    const url = encodeURIComponent(window.location.href);
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+}
+</script>
+
+<style>
+.blog-content {
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
+
+.blog-content h2 {
+    color: #2c3e50;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.blog-content h3 {
+    color: #34495e;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.blog-content p {
+    margin-bottom: 1.25rem;
+}
+
+.blog-content ul, .blog-content ol {
+    margin-bottom: 1.25rem;
+    padding-left: 2rem;
+}
+
+.blog-content li {
+    margin-bottom: 0.5rem;
+}
+
+.blog-content blockquote {
+    border-left: 4px solid #007bff;
+    padding-left: 1.5rem;
+    margin: 1.5rem 0;
+    font-style: italic;
+    color: #6c757d;
+}
+
+.blog-content code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+}
+
+.blog-content pre {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+}
+
+.blog-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+}
+</style>
+{% endblock %}

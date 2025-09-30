@@ -348,26 +348,47 @@ class SocialMediaDistributor:
     ) -> str:
         """Create a fallback post without AI"""
         
+        # Get relevant hashtags
+        hashtags = " ".join(social_content["hashtags"][:config["hashtag_limit"]])
+        
         if post_type == "insight" and social_content["key_insights"]:
             insight = social_content["key_insights"][0]
-            hashtags = " ".join(social_content["hashtags"][:config["hashtag_limit"]])
-            return f"{insight}\n\n{hashtags}"
+            if platform == "twitter":
+                return f"💡 {insight}\n\n{hashtags}"
+            elif platform == "linkedin":
+                return f"Key insight: {insight}\n\n{hashtags}"
+            else:
+                return f"{insight}\n\n{hashtags}"
         
         elif post_type == "quote" and social_content["quotable_statements"]:
             quote = social_content["quotable_statements"][0]
-            hashtags = " ".join(social_content["hashtags"][:config["hashtag_limit"]])
-            return f'"{quote}"\n\n{hashtags}'
+            if platform == "twitter":
+                return f'"{quote}"\n\n{hashtags}'
+            elif platform == "linkedin":
+                return f'"{quote}"\n\n{hashtags}'
+            else:
+                return f'"{quote}"\n\n{hashtags}'
         
         elif post_type == "question" and social_content["engagement_questions"]:
             question = social_content["engagement_questions"][0]
-            hashtags = " ".join(social_content["hashtags"][:config["hashtag_limit"]])
-            return f"{question}\n\n{hashtags}"
+            if platform == "twitter":
+                return f"🤔 {question}\n\n{hashtags}"
+            elif platform == "linkedin":
+                return f"Question for the community: {question}\n\n{hashtags}"
+            else:
+                return f"{question}\n\n{hashtags}"
         
         else:
-            # Default post
+            # Default post with platform-specific formatting
             title = content.title
-            hashtags = " ".join(social_content["hashtags"][:config["hashtag_limit"]])
-            return f"Check out our latest article: {title}\n\n{hashtags}"
+            if platform == "twitter":
+                return f"📝 New article: {title}\n\n{hashtags}"
+            elif platform == "linkedin":
+                return f"Just published: {title}\n\n{hashtags}"
+            elif platform == "facebook":
+                return f"Check out our latest article: {title}\n\n{hashtags}"
+            else:
+                return f"✨ {title}\n\n{hashtags}"
     
     async def schedule_social_posts(
         self, 
